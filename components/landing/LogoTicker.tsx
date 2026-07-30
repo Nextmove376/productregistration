@@ -13,7 +13,7 @@ const logos = [
 
 export default function LogoTicker() {
   return (
-    <section aria-label="Regulators and authorities we work with" className="border-y border-border/60 bg-card py-8">
+    <section aria-label="Regulators and authorities we work with" className="border-y border-border/60 bg-white py-8">
       <div className="group relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
         <div className="marquee-track flex w-max items-center gap-14 group-hover:[animation-play-state:paused]">
           {[0, 1].map((dup) => (
@@ -26,7 +26,7 @@ export default function LogoTicker() {
                   loading="lazy"
                   decoding="async"
                   height={48}
-                  className="h-10 w-auto max-w-[150px] object-contain opacity-70 grayscale transition duration-300 hover:opacity-100 hover:grayscale-0 sm:h-12"
+                  className="h-10 w-auto max-w-[150px] object-contain sm:h-12"
                 />
               ))}
             </div>

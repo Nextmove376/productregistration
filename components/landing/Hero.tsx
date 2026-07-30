@@ -1,23 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const chips = ['Medical Devices', 'Drug Store Setup', 'Cosmetics', 'Health Supplements', 'Food Items', 'Freezone Formation'];
 
 export default function Hero() {
   const [sent, setSent] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   return (
     <section className="relative isolate overflow-hidden">
-      <img
-        src="/images/hero-dubai.jpg"
-        alt="Dubai skyline seen from a modern office at golden hour"
-        width={1920}
-        height={1200}
-        fetchPriority="high"
-        decoding="async"
+      <video
+        ref={videoRef}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="metadata"
+        poster="/images/hero-dubai.jpg"
+        aria-hidden="true"
         className="absolute inset-0 -z-20 h-full w-full object-cover"
-      />
+      >
+        <source src="/hero-video.mp4" type="video/mp4" />
+      </video>
       <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink/90 via-ink/70 to-ink/40" />
 
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 py-24 lg:grid-cols-[1.05fr_0.95fr] lg:py-28">

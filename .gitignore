@@ -43,3 +43,7 @@ next-env.d.ts
 # database
 /data/*.db-shm
 /data/*.db-wal
+
+# source video files (public/hero-video.mp4 is the deployed copy)
+*.mp4
+!public/*.mp4
