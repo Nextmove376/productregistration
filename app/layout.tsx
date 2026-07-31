@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: BASE_URL },
   robots: { index: true, follow: true },
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: [{ url: '/favicon.png', type: 'image/png' }, { url: '/favicon.ico', type: 'image/x-icon' }] },
 };
 
 export default function RootLayout({
@@ -40,7 +40,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+        <link rel="icon" href="/favicon.png" type="image/png" />
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="256x256" />
         <meta name="theme-color" content="#1a2b3b" />
         <script
           type="application/ld+json"
