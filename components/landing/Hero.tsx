@@ -16,12 +16,12 @@ export default function Hero() {
         loop
         muted
         playsInline
-        preload="metadata"
+        preload="none"
         poster="/images/hero-dubai.jpg"
         aria-hidden="true"
         className="absolute inset-0 -z-20 h-full w-full object-cover"
       >
-        <source src="/hero-video.mp4" type="video/mp4" />
+        <source src="https://nextmoveservices.ae/wp-content/uploads/2026/07/product-registration-and-business-setup-in-uae.mp4" type="video/mp4" />
       </video>
       <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink/90 via-ink/70 to-ink/40" />
 

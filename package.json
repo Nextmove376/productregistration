@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "next build && cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public && mkdir -p .next/standalone/data && cp -r data/*.db .next/standalone/data/ 2>/dev/null || true",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint",
     "db:init": "npx tsx scripts/init-db.ts",
     "db:seed": "npx tsx scripts/seed-settings.ts"
