@@ -15,7 +15,7 @@ export default function Insights() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Insights</p>
             <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">Hear directly from our <em className="not-italic text-primary">experts</em>.</h2>
           </div>
-          <Link href="/blog" className="text-sm font-semibold text-primary hover:underline">More insights \u2192</Link>
+          <Link href="/blog" className="text-sm font-semibold text-primary hover:underline">More insights →</Link>
         </div>
         <div className="divide-y divide-border border-y border-border">
           {POSTS.map((p, i) => (

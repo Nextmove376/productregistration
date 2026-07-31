@@ -200,7 +200,7 @@ export default function AboutPage() {
             <div className="md:col-span-4">
               <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
                 <span className="font-serif text-lg">Book a free consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">\u2192</span>
+                <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
               </Link>
               <div className="mt-6 space-y-1 text-sm text-[var(--cream)]/70">
                 <div>+971 52 910 2088</div>

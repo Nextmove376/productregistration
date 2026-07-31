@@ -16,7 +16,7 @@ export default function ContactCta() {
           <div className="md:col-span-4">
             <Link href="/contact" className="group flex items-center justify-between rounded-full bg-primary px-7 py-4 text-primary-foreground shadow-[var(--shadow-glow)] transition hover:-translate-y-0.5">
               <span className="font-display text-base font-semibold">Book a free consultation</span>
-              <span className="text-xl transition-transform group-hover:translate-x-1">\u2192</span>
+              <span className="text-xl transition-transform group-hover:translate-x-1">→</span>
             </Link>
             <div className="mt-5 space-y-1 text-sm text-ink-foreground/70">
               <a href="tel:+971529102088" className="block transition hover:text-ink-foreground">+971 52 910 2088</a>

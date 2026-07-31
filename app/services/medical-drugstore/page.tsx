@@ -63,7 +63,7 @@ export default function MedicalDrugstorePage() {
             <div className="md:col-span-4">
               <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
                 <span className="font-serif text-lg">Book a free consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">\u2192</span>
+                <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
               </Link>
             </div>
           </div>

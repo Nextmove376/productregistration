@@ -20,7 +20,7 @@ export default function Services() {
               Covering the full spectrum of product registration and business services.
             </h2>
           </div>
-          <Link href="/services" className="text-sm font-semibold text-primary hover:underline">Learn more \u2192</Link>
+          <Link href="/services" className="text-sm font-semibold text-primary hover:underline">Learn more →</Link>
         </div>
 
         <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

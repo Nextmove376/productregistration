@@ -125,7 +125,7 @@ export default function Header() {
           href="/contact"
           className="hidden rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-ink-foreground transition hover:opacity-90 md:inline-block"
         >
-          Free Consultation \u2192
+          Free Consultation →
         </Link>
         <button
           onClick={() => setOpen(!open)}
@@ -190,7 +190,7 @@ export default function Header() {
               onClick={() => setOpen(false)}
               className="mt-2 rounded-full bg-ink px-5 py-2.5 text-center text-sm font-semibold text-ink-foreground"
             >
-              Free Consultation \u2192
+              Free Consultation →
             </Link>
           </nav>
         </div>
