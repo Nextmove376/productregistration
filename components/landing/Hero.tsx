@@ -23,28 +23,27 @@ export default function Hero() {
       >
         <source src="https://nextmoveservices.ae/wp-content/uploads/2026/07/product-registration-and-business-setup-in-uae.mp4" type="video/mp4" />
       </video>
-      <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink/90 via-ink/70 to-ink/40" />
 
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 py-24 lg:grid-cols-[1.05fr_0.95fr] lg:py-28">
         <div className="rise-in max-w-xl">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-foreground/85 backdrop-blur-md">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/85 backdrop-blur-md">
             From idea to official — simple
           </span>
-          <h1 className="mt-5 text-3xl font-semibold leading-[1.1] text-ink-foreground sm:text-4xl lg:text-[2.9rem]">
+          <h1 className="mt-5 text-3xl font-semibold leading-[1.1] text-white sm:text-4xl lg:text-[2.9rem]">
             Product registration &amp; business setup in the UAE.
           </h1>
-          <p className="mt-4 max-w-lg text-sm leading-relaxed text-ink-foreground/75 sm:text-base">
+          <p className="mt-4 max-w-lg text-sm leading-relaxed text-white/75 sm:text-base">
             From MOHAP approvals and Dubai Municipality product registration to freezone company formation and PRO services — your end-to-end regulatory partner. Trusted by 500+ brands.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <a href="#contact" className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:-translate-y-0.5">
               Start your registration
             </a>
-            <a href="#services" className="rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-ink-foreground transition hover:bg-white/10">
+            <a href="#services" className="rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
               Explore services
             </a>
           </div>
-          <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-ink-foreground/70">
+          <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-white/70">
             {chips.map((c) => (
               <li key={c} className="flex items-center gap-1.5">
                 <span className="text-primary">✦</span> {c}
