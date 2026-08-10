@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { query, execute } from '@/lib/db';
 import { requireAuth } from '@/lib/api-auth';
-import { stripUnsafeHTML } from '@/lib/sanitize';
+import { sanitizeRichText, slugify, readingMinutes } from '@/lib/sanitize';
 import { z } from 'zod';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const blogPostSchema = z.object({
   title: z.string().min(1).max(200),
@@ -10,29 +13,67 @@ const blogPostSchema = z.object({
   excerpt: z.string().min(1).max(500),
   content: z.string().min(1),
   featured_image: z.string().url().optional().or(z.literal('')),
-  is_published: z.preprocess((v) => (v === true ? 1 : v === false ? 0 : v), z.number().int().min(0).max(1)),
+  image_alt: z.string().max(200).optional().or(z.literal('')),
+  category_id: z.number().int().optional(),
+  status: z.enum(['draft', 'published']).default('draft'),
+  meta_title: z.string().max(200).optional().or(z.literal('')),
+  meta_description: z.string().max(320).optional().or(z.literal('')),
 });
 
 export async function GET() {
-  const db = getDb();
-  const posts = db.prepare('SELECT id, title, slug, excerpt, featured_image, is_published, created_at FROM blog_posts WHERE is_published = 1 ORDER BY created_at DESC').all();
+  const posts = await query<{
+    id: number;
+    title: string;
+    slug: string;
+    excerpt: string | null;
+    featured_image: string | null;
+    image_alt: string | null;
+    status: string;
+    published_at: string | null;
+    reading_minutes: number;
+    views: number;
+    created_at: string;
+  }>(
+    `SELECT id, title, slug, excerpt, featured_image, image_alt, status, published_at, reading_minutes, views, created_at
+     FROM posts ORDER BY created_at DESC`
+  );
   return NextResponse.json(posts);
 }
 
 export async function POST(request: Request) {
-  const { session, error } = await requireAuth();
+  const { session, error } = await requireAuth(request);
   if (error) return error;
 
-  const body = await request.json();
-  const validation = blogPostSchema.safeParse(body);
-  if (!validation.success) {
-    return NextResponse.json({ error: 'Validation failed', details: validation.error.issues }, { status: 400 });
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const db = getDb();
-  const sanitizedContent = stripUnsafeHTML(body.content);
-  const result = db.prepare(
-    'INSERT INTO blog_posts (title, slug, excerpt, content, featured_image, is_published) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(body.title, body.slug, body.excerpt, sanitizedContent, body.featured_image || '', validation.data.is_published);
-  return NextResponse.json({ id: result.lastInsertRowid });
+  const parsed = blogPostSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten().fieldErrors }, { status: 400 });
+  }
+
+  const d = parsed.data;
+  const sanitizedContent = sanitizeRichText(d.content);
+  const minutes = readingMinutes(sanitizedContent);
+  const finalSlug = d.slug || slugify(d.title);
+
+  const result = await execute(
+    `INSERT INTO posts
+      (slug, title, excerpt, content, featured_image, image_alt, category_id, author,
+       status, published_at, meta_title, meta_description, reading_minutes)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?, ?,?)`,
+    [
+      finalSlug, d.title, d.excerpt || null, sanitizedContent,
+      d.featured_image || null, d.image_alt || null, d.category_id || null,
+      session!.name,
+      d.status, d.status === 'published' ? new Date() : null,
+      d.meta_title || null, d.meta_description || null, minutes,
+    ]
+  );
+
+  return NextResponse.json({ id: result.insertId });
 }

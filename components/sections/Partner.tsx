@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Partner() {
   return (
@@ -18,7 +19,7 @@ export default function Partner() {
           </div>
         </div>
         <div className="order-1 md:order-2">
-          <img src="/images/meydan.jpg" alt="Meydan Free Zone" loading="lazy" width={1600} height={1000} className="h-full min-h-[380px] w-full object-cover" />
+          <Image src="/images/meydan.jpg" alt="Meydan Free Zone" width={1600} height={1000} className="h-full min-h-[380px] w-full object-cover" />
         </div>
       </div>
     </section>

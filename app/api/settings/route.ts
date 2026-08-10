@@ -1,41 +1,61 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-import { requireAuth } from '@/lib/api-auth';
+import { query, execute } from '@/lib/db';
+import { requireAuth, requireAdmin } from '@/lib/api-auth';
 import { z } from 'zod';
 
-const settingsSchema = z.record(z.string(), z.string().max(500));
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const settingsSchema = z.record(z.string(), z.string().max(5000));
 
 const PUBLIC_KEYS = [
-  'company_name', 'company_tagline', 'address', 'working_hours',
-  'google_maps_url', 'meta_description',
+  'site_name', 'logo_header', 'logo_footer', 'email', 'phone', 'address',
+  'working_hours', 'footer_tagline', 'footer_legal', 'social_links',
+  'whatsapp_enabled', 'whatsapp_greeting', 'whatsapp_agents',
+  'phone_enabled', 'phone_greeting', 'phone_agents',
 ];
 
 export async function GET() {
-  const db = getDb();
-  const settings = db.prepare('SELECT key, value FROM settings').all() as { key: string; value: string }[];
-  const settingsObj: Record<string, string> = {};
-  settings.forEach((s) => {
-    if (PUBLIC_KEYS.includes(s.key)) {
-      settingsObj[s.key] = s.value;
-    }
-  });
-  return NextResponse.json(settingsObj);
+  const rows = await query<{ setting_key: string; value: string | null }>(
+    'SELECT setting_key, value FROM settings'
+  );
+
+  const settings: Record<string, string> = {};
+  for (const { setting_key, value } of rows) {
+    if (value !== null) settings[setting_key] = value;
+  }
+
+  return NextResponse.json(settings);
 }
 
 export async function PUT(request: Request) {
-  const { session, error } = await requireAuth();
+  const { session, error } = await requireAdmin(request);
   if (error) return error;
 
-  const body = await request.json();
-  const validation = settingsSchema.safeParse(body);
-  if (!validation.success) {
-    return NextResponse.json({ error: 'Validation failed', details: validation.error.issues }, { status: 400 });
+  let raw: unknown;
+  try {
+    raw = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const db = getDb();
-  const update = db.prepare('INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)');
-  Object.entries(body).forEach(([key, value]) => {
-    update.run(key, value);
-  });
+  const parsed = settingsSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten().fieldErrors }, { status: 400 });
+  }
+
+  const entries = Object.entries(parsed.data);
+  if (entries.length === 0) {
+    return NextResponse.json({ error: 'No settings provided' }, { status: 400 });
+  }
+
+  for (const [key, value] of entries) {
+    await execute(
+      `INSERT INTO settings (setting_key, value, updated_at) VALUES (?, ?, NOW())
+       ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = NOW()`,
+      [key, value]
+    );
+  }
+
   return NextResponse.json({ success: true });
 }

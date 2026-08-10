@@ -45,7 +45,7 @@ export default function Services() {
                   <h3 className="text-lg font-semibold">{s.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
                   <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                    Learn more <span className="transition group-hover:translate-x-1">\u2197</span>
+                    Learn more <span className="transition group-hover:translate-x-1">↗</span>
                   </span>
                 </div>
               </Link>

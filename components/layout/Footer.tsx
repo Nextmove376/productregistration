@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Footer() {
   return (
@@ -6,7 +7,7 @@ export default function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-4">
         <div>
           <Link href="/" className="flex items-center gap-2">
-            <img src="/images/logo.png" alt="Nextmove Services" width={160} height={48} className="h-12 w-auto brightness-0 invert" />
+            <Image src="/images/logo.png" alt="Nextmove Services" width={160} height={48} className="h-12 w-auto brightness-0 invert" />
           </Link>
           <p className="mt-4 max-w-xs text-sm">From idea to official — simple. UAE product registration and business setup.</p>
         </div>
@@ -41,7 +42,7 @@ export default function Footer() {
       </div>
       <div className="border-t border-ink-foreground/10">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-6 text-xs text-ink-foreground/50">
-          <div>\u00A9 {new Date().getFullYear()} Nextmove Services. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} Nextmove Services. All rights reserved.</div>
           <div>Registered in the United Arab Emirates</div>
         </div>
       </div>

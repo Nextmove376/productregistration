@@ -1,47 +1,136 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { sanitizeHTML } from '@/lib/sanitize';
+import { execute } from '@/lib/db';
+import { getSettings } from '@/lib/settings';
+import { getRequestContext } from '@/lib/request-context';
+import { rateLimit, tooMany } from '@/lib/api-auth';
+import { sendEnquiryNotification, sendEnquiryAcknowledgement } from '@/lib/mail';
 
-const contactSchema = z.object({
-  name: z.string().min(1).max(100),
-  email: z.string().email().max(200),
-  phone: z.string().max(30).optional().or(z.literal('')),
-  company: z.string().max(200).optional().or(z.literal('')),
-  service: z.string().max(200).optional().or(z.literal('')),
-  message: z.string().min(1).max(5000),
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const schema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().max(40).optional().or(z.literal('')),
+  company: z.string().trim().max(200).optional().or(z.literal('')),
+  service: z.string().trim().max(200).optional().or(z.literal('')),
+  message: z.string().trim().min(10).max(5000),
+  source_page: z.string().max(300).optional().or(z.literal('')),
+  utm: z
+    .object({
+      source: z.string().max(120).optional(),
+      medium: z.string().max(120).optional(),
+      campaign: z.string().max(160).optional(),
+      term: z.string().max(160).optional(),
+      content: z.string().max(160).optional(),
+    })
+    .optional(),
+  // Spam controls — a bot fills the hidden field; a human takes >3s to type.
+  website: z.string().max(0).optional(),
+  elapsed_ms: z.number().int().nonnegative().optional(),
 });
 
 export async function POST(request: Request) {
-  let body: unknown;
+  const ctx = getRequestContext(request.headers);
+
+  const limit = rateLimit(`enquiry:${ctx.ipHash}`, 5, 3600);
+  if (!limit.ok) return tooMany(limit.retryAfter);
+
+  let raw: unknown;
   try {
-    body = await request.json();
+    raw = await request.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const validation = contactSchema.safeParse(body);
-  if (!validation.success) {
-    return NextResponse.json({ error: 'Validation failed', details: validation.error.issues }, { status: 400 });
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'Please check the highlighted fields.', fields: parsed.error.flatten().fieldErrors },
+      { status: 400 }
+    );
   }
 
-  const data = validation.data;
+  const d = parsed.data;
 
-  // Sanitize all string fields
-  const sanitized = {
-    name: sanitizeHTML(data.name),
-    email: sanitizeHTML(data.email),
-    phone: sanitizeHTML(data.phone || ''),
-    company: sanitizeHTML(data.company || ''),
-    service: sanitizeHTML(data.service || ''),
-    message: sanitizeHTML(data.message),
+  // Honeypot / speed trap. Return success so bots don't learn they were caught,
+  // but drop the submission.
+  if (d.website || (d.elapsed_ms !== undefined && d.elapsed_ms < 3000)) {
+    return NextResponse.json({ success: true });
+  }
+
+  // Persist FIRST. If SMTP later fails the lead is still captured and shows in
+  // the admin inbox flagged for retry — the previous version only logged to
+  // stdout, so every enquiry was lost.
+  let id: number;
+  try {
+    const result = await execute(
+      `INSERT INTO submissions
+        (name, email, phone, company, service, message, source_page,
+         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+         referrer, ip_hash, country, city, device, browser, mail_status)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'pending')`,
+      [
+        d.name, d.email, d.phone || null, d.company || null, d.service || null,
+        d.message, d.source_page || null,
+        d.utm?.source || null, d.utm?.medium || null, d.utm?.campaign || null,
+        d.utm?.term || null, d.utm?.content || null,
+        ctx.referrer, ctx.ipHash, ctx.country, ctx.city, ctx.device, ctx.browser,
+      ]
+    );
+    id = result.insertId;
+  } catch (err) {
+    console.error('[enquiry] database insert failed:', err);
+    return NextResponse.json(
+      { error: 'We could not save your message. Please call +971 52 910 2088.' },
+      { status: 500 }
+    );
+  }
+
+  const settings = await getSettings();
+  const recipients = settings.enquiry_recipients.length
+    ? settings.enquiry_recipients
+    : [process.env.MAIL_TO || settings.email];
+
+  const enquiry = {
+    id,
+    name: d.name,
+    email: d.email,
+    phone: d.phone,
+    company: d.company,
+    service: d.service,
+    message: d.message,
+    sourcePage: d.source_page,
+    country: ctx.country,
+    city: ctx.city,
+    utmSource: d.utm?.source,
+    utmCampaign: d.utm?.campaign,
   };
 
-  // In production, send email notification or store in DB
-  // For now, log to server and return success
-  console.log('[Contact Form]', {
-    ...sanitized,
-    timestamp: new Date().toISOString(),
-  });
+  try {
+    await sendEnquiryNotification(enquiry, recipients);
+    await execute('UPDATE submissions SET mail_status = ? WHERE id = ?', ['sent', id]);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown mail error';
+    console.error('[enquiry] notification failed:', msg);
+    await execute('UPDATE submissions SET mail_status = ?, mail_error = ? WHERE id = ?', [
+      'failed',
+      msg.slice(0, 500),
+      id,
+    ]);
+    // The lead is saved, so this is still a success from the visitor's side.
+  }
 
-  return NextResponse.json({ success: true, message: 'Your message has been received. We will respond within one business day.' });
+  // Acknowledgement is best-effort; never fail the request over it.
+  try {
+    await sendEnquiryAcknowledgement(enquiry);
+  } catch (err) {
+    console.error('[enquiry] acknowledgement failed:', err);
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: 'Thank you — we have received your enquiry and will respond within one business day.',
+  });
 }

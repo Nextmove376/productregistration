@@ -1,13 +1,15 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { stripUnsafeHTML } from '@/lib/sanitize';
+import { sanitizeRichText } from '@/lib/sanitize';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
-const blogPosts: Record<string, { title: string; content: string; date: string; tag: string }> = {
+const blogPosts: Record<string, { title: string; content: string; date: string; tag: string; description: string }> = {
   'open-a-pharmacy-in-dubai-uae': {
     title: 'Open a Pharmacy in Dubai UAE: Foreign Investor Guide 2026',
     date: 'Jul 20, 2026',
     tag: 'Guide',
+    description: 'Complete guide for foreign investors looking to open a pharmacy in Dubai. Covers MOHAP licensing, 100% ownership rules, and step-by-step setup process.',
     content: `
       <p>Opening a pharmacy in Dubai as a foreign investor requires careful planning and understanding of UAE regulations.</p>
       <h2>Requirements for Pharmacy Setup</h2>
@@ -20,6 +22,7 @@ const blogPosts: Record<string, { title: string; content: string; date: string; 
     title: 'How to Register a Product in Dubai, UAE: The Complete Step-by-Step Guide (2026)',
     date: 'Jul 15, 2026',
     tag: 'Playbook',
+    description: 'Step-by-step guide to registering products in Dubai through Dubai Municipality, ESMA, and MOHAP. Covers cosmetics, food, supplements, and medical devices.',
     content: `
       <p>Product registration in Dubai involves multiple steps and regulatory approvals.</p>
       <h2>Step 1: Documentation</h2>
@@ -32,6 +35,7 @@ const blogPosts: Record<string, { title: string; content: string; date: string; 
     title: 'Set Up a Business in Dubai: Mainland vs Free Zone vs Offshore — Complete 2026 Guide',
     date: 'Jul 10, 2026',
     tag: 'Comparison',
+    description: 'Compare mainland, free zone, and offshore business setup in Dubai. Covers costs, ownership, visa quotas, and which option is right for your business.',
     content: `
       <p>Choosing the right business setup option in UAE depends on your business goals.</p>
       <h2>Mainland Setup</h2>
@@ -41,6 +45,33 @@ const blogPosts: Record<string, { title: string; content: string; date: string; 
     `,
   },
 };
+
+const BASE_URL = 'https://productregistrationinuae.com';
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const post = blogPosts[slug];
+  if (!post) return { title: 'Post Not Found' };
+
+  return {
+    title: `${post.title} | Next Move Services`,
+    description: post.description,
+    alternates: { canonical: `${BASE_URL}/blog/${slug}` },
+    openGraph: {
+      title: post.title,
+      description: post.description,
+      url: `${BASE_URL}/blog/${slug}`,
+      type: 'article',
+      publishedTime: post.date,
+      images: [{ url: '/images/hero-dubai.jpg', width: 1920, height: 1200 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.description,
+    },
+  };
+}
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -64,6 +95,21 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BlogPosting',
+            headline: post.title,
+            datePublished: post.date,
+            description: post.description,
+            url: `${BASE_URL}/blog/${slug}`,
+            publisher: { '@type': 'Organization', name: 'Next Move Services' },
+            mainEntityOfPage: { '@type': 'WebPage', '@id': `${BASE_URL}/blog/${slug}` },
+          }),
+        }}
+      />
       <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
         <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, var(--teal), transparent 40%)' }} />
         <div className="relative mx-auto max-w-4xl px-6 pb-20 pt-24 md:pt-32">
@@ -76,7 +122,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </div>
       </section>
       <article className="mx-auto max-w-4xl px-6 py-16 md:py-24">
-        <div className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-[var(--navy)] prose-p:text-muted-foreground prose-a:text-[var(--teal-deep)]" dangerouslySetInnerHTML={{ __html: stripUnsafeHTML(post.content) }} />
+        <div className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-[var(--navy)] prose-p:text-muted-foreground prose-a:text-[var(--teal-deep)]" dangerouslySetInnerHTML={{ __html: sanitizeRichText(post.content) }} />
       </article>
       <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
         <div className="mx-auto max-w-7xl px-6 py-20 md:py-28">

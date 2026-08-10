@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 const tabs = [
   {
@@ -45,7 +46,7 @@ export default function AboutPreview() {
             <p className="text-gray-600">{tabs.find((t) => t.id === activeTab)?.content}</p>
           </div>
           <div>
-            <img src="/images/about-image.jpg" alt="About NextMove" className="rounded-lg" />
+            <Image src="/images/why-us.jpg" alt="About NextMove" width={800} height={600} className="rounded-lg" />
           </div>
         </div>
       </div>

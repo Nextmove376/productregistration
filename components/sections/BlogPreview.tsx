@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 const posts = [
   { 
@@ -6,21 +7,21 @@ const posts = [
     excerpt: 'A step-by-step guide to registering cosmetics, health supplements, and food items with Dubai Municipality.',
     slug: 'product-registration-dubai-guide',
     date: 'Jan 15, 2025',
-    image: '/images/blog-1.jpg'
+    image: '/images/svc-product.jpg'
   },
   { 
     title: 'Business Setup in UAE: Free Zone vs Mainland', 
     excerpt: 'Which option is best for your company? We compare costs, ownership, and visa eligibility.',
     slug: 'business-setup-uae-free-zone-mainland',
     date: 'Jan 10, 2025',
-    image: '/images/blog-2.jpg'
+    image: '/images/svc-setup.jpg'
   },
   { 
     title: 'MOHAP Approval Process for Medical Devices', 
     excerpt: 'Everything you need to know about Class I, II, and III medical device registration in the UAE.',
     slug: 'mohap-approval-medical-devices',
     date: 'Jan 5, 2025',
-    image: '/images/blog-3.jpg'
+    image: '/images/svc-mohap.jpg'
   },
 ];
 
@@ -40,7 +41,7 @@ export default function BlogPreview() {
           {posts.map((post) => (
             <Link key={post.slug} href={`/blog/${post.slug}`} className="group bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all">
               <div className="relative h-48 overflow-hidden">
-                <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                <Image src={post.image} alt={post.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
               </div>
               <div className="p-6">
                 <p className="text-sm text-gray-500 mb-2">{post.date}</p>

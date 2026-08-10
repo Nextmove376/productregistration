@@ -24,7 +24,7 @@ export default function Insights() {
               <span className="col-span-3 text-[11px] uppercase tracking-wider text-muted-foreground sm:col-span-2">{p.tag}</span>
               <h3 className="col-span-7 font-display text-base font-semibold leading-tight transition-colors group-hover:text-primary sm:col-span-6 sm:text-lg">{p.title}</h3>
               <span className="col-span-2 hidden text-xs text-muted-foreground sm:block">{p.read}</span>
-              <span className="col-span-1 hidden text-right text-lg transition-transform group-hover:-translate-y-1 group-hover:translate-x-1 sm:block">\u2197</span>
+              <span className="col-span-1 hidden text-right text-lg transition-transform group-hover:-translate-y-1 group-hover:translate-x-1 sm:block">↗</span>
             </Link>
           ))}
         </div>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function WhyUs() {
   return (
@@ -20,7 +21,7 @@ export default function WhyUs() {
           </Link>
         </div>
         <div className="relative">
-          <img src="/images/doc-seal.jpg" alt="Official teal wax seal" loading="lazy" width={1200} height={1400} className="rounded-3xl object-cover shadow-2xl" />
+          <Image src="/images/doc-seal.jpg" alt="Official teal wax seal" width={1200} height={1400} className="rounded-3xl object-cover shadow-2xl" />
           <div className="absolute -bottom-6 -left-6 rounded-2xl bg-[var(--cream)] p-5 text-foreground shadow-xl">
             <div className="font-serif text-3xl text-[var(--teal-deep)]">98%</div>
             <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">First-pass approval</div>

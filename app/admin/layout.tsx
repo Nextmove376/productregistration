@@ -1,43 +1,22 @@
-'use client';
-
-import { SessionProvider, useSession } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
+import { getSession } from '@/lib/auth';
 import Sidebar from '@/components/admin/Sidebar';
 
-function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { status } = useSession();
-  const pathname = usePathname();
-  const router = useRouter();
+export const dynamic = 'force-dynamic';
 
-  if (pathname === '/admin/login') return <>{children}</>;
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession();
 
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated') {
-    router.replace('/admin/login');
-    return null;
+  // proxy.ts redirects unauthenticated visitors to /admin/login before they get
+  // here, so the only session-less page that renders is the login screen — show
+  // it without the admin chrome.
+  if (!session) {
+    return <div className="min-h-screen bg-neutral-100">{children}</div>;
   }
 
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden md:block">
-        <Sidebar />
-      </div>
-      <main className="flex-1 p-4 md:p-8 bg-gray-100 overflow-x-auto">{children}</main>
+    <div className="flex min-h-screen bg-neutral-100 text-neutral-900">
+      <Sidebar user={{ name: session.name, email: session.email, role: session.role }} />
+      <main className="flex-1 overflow-x-auto p-4 pb-24 md:p-8 md:pb-8">{children}</main>
     </div>
-  );
-}
-
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <SessionProvider>
-      <AdminGuard>{children}</AdminGuard>
-    </SessionProvider>
   );
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface ServiceHeroProps {
   title: string;
@@ -19,7 +20,7 @@ export default function ServiceHero({ title, description, image }: ServiceHeroPr
             </Link>
           </div>
           <div className="hidden md:block">
-            <img src={image} alt={title} className="rounded-lg" />
+            <Image src={image} alt={title} width={800} height={600} className="rounded-lg" />
           </div>
         </div>
       </div>

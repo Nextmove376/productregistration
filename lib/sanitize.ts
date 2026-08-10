@@ -1,49 +1,57 @@
+import DOMPurify from 'isomorphic-dompurify';
+
 /**
- * Escapes all HTML entities for safe display.
+ * Sanitize rich-text blog content before it reaches dangerouslySetInnerHTML.
+ *
+ * The previous regex kept a tag allowlist but preserved every attribute on
+ * allowed tags, so `<img src=x onerror=alert(1)>` passed through unchanged.
+ * It also missed `vbscript:`, `data:text/html`, and entity-encoded variants.
+ * DOMPurify parses the DOM tree properly and blocks all of these.
  */
-export function sanitizeHTML(html: string): string {
-  return html
+export function sanitizeRichText(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'hr', 'strong', 'em', 'u', 's',
+      'h2', 'h3', 'h4', 'ul', 'ol', 'li',
+      'a', 'img', 'figure', 'figcaption',
+      'blockquote', 'code', 'pre',
+      'table', 'thead', 'tbody', 'tr', 'th', 'td',
+    ],
+    ALLOWED_ATTR: ['href', 'title', 'target', 'rel', 'src', 'alt', 'width', 'height', 'loading'],
+    ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|tel:|\/(?!\/))/i,
+    FORBID_ATTR: ['style', 'srcset', 'formaction', 'form'],
+  });
+}
+
+/**
+ * Escape plain text for safe interpolation into an HTML email or attribute.
+ * This is the old `sanitizeHTML` — renamed to make it clear it only works
+ * on plain text, not on markup that needs to be rendered.
+ */
+export function escapeHtml(text: string): string {
+  return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')
-    .replace(/\//g, '&#x2F;');
+    .replace(/'/g, '&#39;');
 }
 
-/**
- * Strips dangerous attributes (on*, javascript: hrefs) from allowed tags.
- * Removes all tags except basic formatting.
- */
-export function stripUnsafeHTML(html: string): string {
-  const allowedTags = ['p', 'br', 'strong', 'em', 'h2', 'h3', 'h4', 'ul', 'ol', 'li', 'a', 'img', 'blockquote', 'code', 'pre'];
-  const allowedAttrs: Record<string, string[]> = {
-    a: ['href', 'title', 'rel'],
-    img: ['src', 'alt', 'width', 'height'],
-  };
+/** Turn a title into a URL-safe slug. */
+export function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[\s-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 180);
+}
 
-  return html
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (match, tag) => {
-      const lower = tag.toLowerCase();
-      if (!allowedTags.includes(lower)) return '';
-      if (match.startsWith('</')) return `</${lower}>`;
-      const attrs = allowedAttrs[lower];
-      if (!attrs) return `<${lower}>`;
-      const cleaned = match.replace(
-        /\s+([a-zA-Z_:][\w:.-]*)(\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*))?/g,
-        (attrMatch: string, name: string, _eq: string, val: string) => {
-          const attrLower = name.toLowerCase();
-          if (attrLower.startsWith('on')) return '';
-          if (attrLower === 'style') return '';
-          if (val && attrLower === 'href' && /javascript\s*:/i.test(val)) return '';
-          if (val && attrLower === 'src' && /javascript\s*:/i.test(val)) return '';
-          if (!attrs.includes(attrLower)) return '';
-          return attrMatch;
-        }
-      );
-      return cleaned.replace(/<([a-zA-Z][a-zA-Z0-9]*)\s*>/, '<$1>');
-    });
+/** Approximate reading time for blog cards. */
+export function readingMinutes(html: string): number {
+  const words = html.replace(/<[^>]+>/g, ' ').trim().split(/\s+/).length;
+  return Math.max(1, Math.round(words / 220));
 }

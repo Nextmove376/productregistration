@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
@@ -199,7 +200,7 @@ function Compare() {
         <div className="md:col-span-5">
           <div className="text-xs uppercase tracking-[0.25em] text-[var(--teal-deep)]">The difference</div>
           <h2 className="mt-4 text-4xl leading-tight md:text-5xl">Why founders switch to Nextmove.</h2>
-          <img src="/images/doc-seal.jpg" alt="Teal wax seal" loading="lazy" width={1200} height={1400} className="mt-8 hidden rounded-3xl object-cover md:block" />
+          <Image src="/images/doc-seal.jpg" alt="Teal wax seal" width={1200} height={1400} className="mt-8 hidden rounded-3xl object-cover md:block" />
         </div>
         <div className="md:col-span-7">
           <div className="overflow-hidden rounded-3xl border border-border">

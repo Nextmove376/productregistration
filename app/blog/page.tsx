@@ -1,11 +1,25 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 
+export const metadata: Metadata = {
+  title: 'Blog & Insights | UAE Product Registration Guides — Next Move Services',
+  description: 'Expert guides on product registration in Dubai, MOHAP approvals, business setup, and UAE regulatory compliance. Updated for 2026.',
+  alternates: { canonical: 'https://productregistrationinuae.com/blog' },
+  openGraph: {
+    title: 'Blog & Insights | Next Move Services',
+    description: 'Expert guides on product registration, MOHAP approvals, and business setup in UAE.',
+    url: 'https://productregistrationinuae.com/blog',
+    images: [{ url: '/images/hero-dubai.jpg', width: 1920, height: 1200 }],
+  },
+};
+
 const POSTS = [
-  { slug: 'open-a-pharmacy-in-dubai-uae', tag: 'Guide', title: 'Open a Pharmacy in Dubai UAE: Foreign Investor Guide 2026', read: '12 min read', date: 'Jul 20, 2026' },
-  { slug: 'how-to-register-a-product-in-dubai', tag: 'Playbook', title: 'How to Register a Product in Dubai, UAE: The Complete Step-by-Step Guide (2026)', read: '18 min read', date: 'Jul 15, 2026' },
-  { slug: 'how-to-set-up-a-business-in-dubai-uae', tag: 'Comparison', title: 'Set Up a Business in Dubai: Mainland vs Free Zone vs Offshore — Complete 2026 Guide', read: '15 min read', date: 'Jul 10, 2026' },
+  { slug: 'open-a-pharmacy-in-dubai-uae', tag: 'Guide', title: 'Open a Pharmacy in Dubai UAE: Foreign Investor Guide 2026', read: '12 min read', date: 'Jul 20, 2026', image: '/images/svc-mohap.jpg' },
+  { slug: 'how-to-register-a-product-in-dubai', tag: 'Playbook', title: 'How to Register a Product in Dubai, UAE: The Complete Step-by-Step Guide (2026)', read: '18 min read', date: 'Jul 15, 2026', image: '/images/svc-product.jpg' },
+  { slug: 'how-to-set-up-a-business-in-dubai-uae', tag: 'Comparison', title: 'Set Up a Business in Dubai: Mainland vs Free Zone vs Offshore — Complete 2026 Guide', read: '15 min read', date: 'Jul 10, 2026', image: '/images/svc-setup.jpg' },
 ];
 
 export default function BlogPage() {
@@ -26,15 +40,25 @@ export default function BlogPage() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-        <div className="divide-y divide-border border-y border-border">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {POSTS.map((p, i) => (
-            <Link key={i} href={`/blog/${p.slug}`} className="group grid grid-cols-12 items-center gap-6 py-8 transition-colors hover:bg-[var(--cream)]">
-              <span className="col-span-1 font-serif text-lg text-[var(--teal-deep)]">0{i + 1}</span>
-              <span className="col-span-2 text-xs uppercase tracking-wider text-muted-foreground">{p.tag}</span>
-              <h3 className="col-span-5 font-serif text-xl leading-tight transition-colors group-hover:text-[var(--teal-deep)]">{p.title}</h3>
-              <span className="col-span-2 text-xs text-muted-foreground">{p.date}</span>
-              <span className="col-span-1 text-xs text-muted-foreground">{p.read}</span>
-              <span className="col-span-1 text-right text-lg transition-transform group-hover:-translate-y-1 group-hover:translate-x-1">\u2197</span>
+            <Link key={i} href={`/blog/${p.slug}`} className="group overflow-hidden rounded-3xl border border-border bg-[var(--cream)] transition-all hover:border-[var(--teal)]/40 hover:shadow-xl">
+              <div className="relative h-56 overflow-hidden">
+                <Image src={p.image} alt={p.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                <span className="absolute left-4 top-4 rounded-full bg-[var(--teal)] px-3 py-1 text-xs font-semibold text-[var(--navy)]">{p.tag}</span>
+              </div>
+              <div className="p-6">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>{p.date}</span>
+                  <span>·</span>
+                  <span>{p.read}</span>
+                </div>
+                <h3 className="mt-3 font-serif text-xl leading-tight transition-colors group-hover:text-[var(--teal-deep)]">{p.title}</h3>
+                <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[var(--teal-deep)]">
+                  Read article <span className="transition-transform group-hover:translate-x-1">↗</span>
+                </span>
+              </div>
             </Link>
           ))}
         </div>

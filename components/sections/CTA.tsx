@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CTA() {
   return (
@@ -12,7 +13,7 @@ export default function CTA() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left - Logo & Description */}
           <div>
-            <img src="/images/logo-white.png" alt="NextMove Services" className="h-16 mb-6" />
+            <Image src="/images/logo.png" alt="NextMove Services" width={160} height={48} className="h-16 w-auto brightness-0 invert mb-6" />
             <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
               Ready to Start Your Business in UAE?
             </h2>
