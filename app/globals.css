@@ -1,0 +1,134 @@
+﻿@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --color-sand: var(--sand);
+  --color-navy: var(--navy);
+  --color-cream: var(--cream);
+  --color-teal: var(--teal);
+  --color-teal-deep: var(--teal-deep);
+}
+
+:root {
+  --radius: 1rem;
+  --background: oklch(0.985 0.008 85);
+  --foreground: oklch(0.24 0.05 220);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.24 0.05 220);
+  --primary: oklch(0.55 0.11 195);
+  --primary-foreground: oklch(0.99 0.005 90);
+  --secondary: oklch(0.95 0.015 85);
+  --secondary-foreground: oklch(0.24 0.05 220);
+  --muted: oklch(0.955 0.012 85);
+  --muted-foreground: oklch(0.52 0.02 230);
+  --accent: oklch(0.93 0.03 190);
+  --accent-foreground: oklch(0.24 0.05 220);
+  --border: oklch(0.9 0.012 200);
+  --input: oklch(0.9 0.012 200);
+  --ring: oklch(0.55 0.11 195);
+  --ink: oklch(0.24 0.06 235);
+  --ink-foreground: oklch(0.98 0.005 90);
+  --sand: oklch(0.95 0.022 78);
+  --navy: oklch(0.2 0.06 240);
+  --cream: oklch(0.97 0.01 85);
+  --teal: oklch(0.6 0.12 180);
+  --teal-deep: oklch(0.45 0.12 180);
+  --gradient-glass: linear-gradient(135deg, color-mix(in oklab, white 80%, transparent), color-mix(in oklab, var(--sand) 62%, transparent));
+  --shadow-soft: 0 24px 60px -24px color-mix(in oklab, var(--ink) 45%, transparent);
+  --shadow-glow: 0 20px 60px -18px color-mix(in oklab, var(--primary) 50%, transparent);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility glass-panel {
+  background: var(--gradient-glass);
+  backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid color-mix(in oklab, white 65%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+@utility glass-dark {
+  background: color-mix(in oklab, white 10%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid color-mix(in oklab, white 20%, transparent);
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@utility marquee-track {
+  animation: marquee 38s linear infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(0, -18px, 0) scale(1.04); }
+}
+
+@utility float-slow {
+  animation: float-slow 9s ease-in-out infinite;
+}
+
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@utility caret {
+  animation: caret-blink 1s step-end infinite;
+}
+
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@utility rise-in {
+  animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
