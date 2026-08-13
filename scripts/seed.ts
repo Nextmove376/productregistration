@@ -1,4 +1,4 @@
-﻿import pool from '../lib/db';
+import pool from '../lib/db';
 import { hashPassword } from '../lib/auth';
 
 async function seed() {

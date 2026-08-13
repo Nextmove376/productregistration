@@ -23,13 +23,13 @@ export default function Hero() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 py-24 lg:grid-cols-[1.05fr_0.95fr] lg:py-28">
         <div className="rise-in max-w-xl">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-foreground/85 backdrop-blur-md">
-            From idea to official — simple
+            From idea to official â€” simple
           </span>
           <h1 className="mt-5 text-3xl font-semibold leading-[1.1] text-ink-foreground sm:text-4xl lg:text-[2.9rem]">
             Product registration &amp; business setup in the UAE.
           </h1>
           <p className="mt-4 max-w-lg text-sm leading-relaxed text-ink-foreground/75 sm:text-base">
-            From MOHAP approvals and Dubai Municipality product registration to freezone company formation and PRO services — your end-to-end regulatory partner. Trusted by 500+ brands.
+            From MOHAP approvals and Dubai Municipality product registration to freezone company formation and PRO services â€” your end-to-end regulatory partner. Trusted by 500+ brands.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <a href="#contact" className="rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition hover:-translate-y-0.5">
@@ -42,7 +42,7 @@ export default function Hero() {
           <ul className="mt-8 flex flex-wrap gap-x-5 gap-y-2 text-xs text-ink-foreground/70">
             {chips.map((c) => (
               <li key={c} className="flex items-center gap-1.5">
-                <span className="text-primary">✦</span> {c}
+                <span className="text-primary">âœ¦</span> {c}
               </li>
             ))}
           </ul>
@@ -71,7 +71,7 @@ export default function Hero() {
                 <input required type="email" placeholder="Email address" className="h-11 w-full rounded-xl border border-border/70 bg-white/70 px-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25" />
                 <input required placeholder="Phone / WhatsApp" className="h-11 w-full rounded-xl border border-border/70 bg-white/70 px-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25" />
                 <select required defaultValue="" className="h-11 w-full rounded-xl border border-border/70 bg-white/70 px-4 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25">
-                  <option value="" disabled>Choose a service…</option>
+                  <option value="" disabled>Choose a serviceâ€¦</option>
                   <option>Medical Devices &amp; Medicines</option>
                   <option>Drug Store Setup</option>
                   <option>Cosmetic Products</option>
@@ -80,7 +80,7 @@ export default function Hero() {
                   <option>Biocides &amp; Detergents</option>
                 </select>
                 <button type="submit" className="h-11 w-full rounded-xl bg-ink text-sm font-semibold text-ink-foreground transition hover:opacity-90">
-                  {sent ? "Thank you — we'll be in touch" : "Send"}
+                  {sent ? "Thank you â€” we'll be in touch" : "Send"}
                 </button>
               </form>
               <p className="mt-3 text-center text-[11px] text-muted-foreground">Replies within one business day.</p>

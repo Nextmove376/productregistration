@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import ServicePageLayout from "@/components/services/ServicePageLayout";
 import type { ServicePageData } from "@/components/services/ServicePageLayout";
 

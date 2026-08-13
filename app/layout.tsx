@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 import WhatsAppWidget from "@/components/widgets/WhatsAppWidget";
 import PhoneWidget from "@/components/widgets/PhoneWidget";

@@ -1,4 +1,4 @@
-﻿import mysql from 'mysql2/promise';
+import mysql from 'mysql2/promise';
 
 const required = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'] as const;
 for (const key of required) {

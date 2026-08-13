@@ -1,4 +1,4 @@
-﻿export default function PricingTable({ rows }: { rows: { service: string; timeline: string; price: string }[] }) {
+export default function PricingTable({ rows }: { rows: { service: string; timeline: string; price: string }[] }) {
   return (
     <div className="mt-8">
       <div className="overflow-hidden rounded-2xl border border-border">

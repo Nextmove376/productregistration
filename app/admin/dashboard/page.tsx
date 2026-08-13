@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { FileText, Users, Inbox, Plus } from 'lucide-react';
 import pool from '@/lib/db';
 

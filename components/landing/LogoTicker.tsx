@@ -1,7 +1,7 @@
 const logos = [
   { src: '/logos/mohap-1.svg', alt: 'Ministry of Health and Prevention (MOHAP)' },
   { src: '/logos/DRUG.svg', alt: 'UAE Drug Registration authority' },
-  { src: '/logos/Sira-Logo.webp', alt: 'SIRA — Security Industry Regulatory Agency' },
+  { src: '/logos/Sira-Logo.webp', alt: 'SIRA â€” Security Industry Regulatory Agency' },
   { src: '/logos/logo-blue-e1761295131394.webp', alt: 'Dubai Municipality' },
   { src: '/logos/SPCFZ-Sharjah.png', alt: 'SPC Free Zone Sharjah' },
   { src: '/logos/wArtboard-3.svg', alt: 'UAE regulatory partner' },

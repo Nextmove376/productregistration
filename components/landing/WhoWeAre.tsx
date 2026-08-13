@@ -20,7 +20,7 @@ export default function WhoWeAre() {
         </div>
         <div className="rounded-3xl border border-border/70 bg-card p-7 shadow-[var(--shadow-soft)]">
           <p className="text-sm leading-relaxed text-muted-foreground">
-            Welcome to Next Move Services — your trusted partner for product registration in Dubai and business setup in the UAE. We help brands secure fast approvals for cosmetics, food, supplements and more, handling everything from label checks to CPRE submission and compliance.
+            Welcome to Next Move Services â€” your trusted partner for product registration in Dubai and business setup in the UAE. We help brands secure fast approvals for cosmetics, food, supplements and more, handling everything from label checks to CPRE submission and compliance.
           </p>
           <dl className="mt-7 grid grid-cols-3 gap-4 border-t border-border/70 pt-6">
             {[

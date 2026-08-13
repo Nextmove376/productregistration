@@ -23,7 +23,7 @@ const defaultSettings = [
     facebook: 'https://www.facebook.com/profile.php?id=61576244169690',
     instagram: 'https://www.instagram.com/nextmoveservices/'
   })},
-  { key: 'footer_text', value: '© 2026 Next Move Services. All Rights Reserved' }
+  { key: 'footer_text', value: 'Â© 2026 Next Move Services. All Rights Reserved' }
 ];
 
 const insert = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');

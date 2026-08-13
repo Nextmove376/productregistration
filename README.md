@@ -1,4 +1,4 @@
-﻿# NextMove Services — Product Registration UAE
+# NextMove Services — Product Registration UAE
 
 A production-ready CMS for a Dubai regulatory consultancy, built with Next.js 16, React 19, MySQL 8, and Tailwind CSS 4.
 

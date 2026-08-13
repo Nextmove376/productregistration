@@ -1,4 +1,4 @@
-﻿interface Step { step: number; title: string; description: string; timeline: string; }
+interface Step { step: number; title: string; description: string; timeline: string; }
 
 export default function ProcessSteps({ steps }: { steps: Step[] }) {
   return (

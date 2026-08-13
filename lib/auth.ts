@@ -1,4 +1,4 @@
-﻿import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import pool from '@/lib/db';

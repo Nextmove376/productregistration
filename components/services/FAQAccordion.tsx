@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState } from 'react';
 
 export default function FAQAccordion({ faqs }: { faqs: { question: string; answer: string }[] }) {

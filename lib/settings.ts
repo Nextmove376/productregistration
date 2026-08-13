@@ -1,4 +1,4 @@
-﻿import pool from '@/lib/db';
+import pool from '@/lib/db';
 
 interface CachedSettings {
   data: Record<string, string>;

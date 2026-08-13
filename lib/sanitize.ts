@@ -1,4 +1,4 @@
-﻿import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'isomorphic-dompurify';
 
 const RICH_TEXT_TAGS = [
   'p', 'br', 'strong', 'em', 'b', 'i', 'u', 's', 'sub', 'sup',

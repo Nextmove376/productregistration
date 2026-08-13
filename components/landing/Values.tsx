@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 const values = [
   { n: '01', title: 'Family-Rooted Integrity', desc: "Built on trust and genuine care. Every decision reflects what's right." },
   { n: '02', title: 'Entrepreneurial Empathy', desc: "We've lived the founder journey and guide as we wish we'd been guided." },
-  { n: '03', title: 'End-to-End Reliability', desc: 'One-stop support. No confusion, no stress — just dependable execution.' },
+  { n: '03', title: 'End-to-End Reliability', desc: 'One-stop support. No confusion, no stress â€” just dependable execution.' },
   { n: '04', title: 'Vision of Next Move', desc: 'A lifelong partnership that grows with every stage of your success.' },
 ];
 
@@ -43,7 +43,7 @@ export default function Values() {
                 {v.n}
               </span>
               <div className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/25 text-primary">
-                <span className="text-lg">✦</span>
+                <span className="text-lg">âœ¦</span>
               </div>
               <h3 className="mt-5 text-lg font-semibold">{v.title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-foreground/70">{v.desc}</p>

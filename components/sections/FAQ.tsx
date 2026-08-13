@@ -5,8 +5,8 @@ import { useState } from 'react';
 
 const FAQS = [
   { q: 'What documents do I need for product registration?', a: 'Requirements vary by category, but typically include a valid trade license, product artwork, ingredient list, certificate of free sale, GMP certificate, and lab analysis. We audit your file first so nothing gets rejected downstream.' },
-  { q: 'How long does MOHAP registration take?', a: 'For medical devices and medicines, expect 8–14 weeks depending on classification and dossier completeness. We prepare the file to minimise back-and-forth with the ministry.' },
-  { q: 'Mainland or Freezone — which is right for me?', a: "It depends on where your customers are and what activities you'll perform. We map both scenarios (cost, ownership, visa quota, restrictions) before you commit." },
+  { q: 'How long does MOHAP registration take?', a: 'For medical devices and medicines, expect 8â€“14 weeks depending on classification and dossier completeness. We prepare the file to minimise back-and-forth with the ministry.' },
+  { q: 'Mainland or Freezone â€” which is right for me?', a: "It depends on where your customers are and what activities you'll perform. We map both scenarios (cost, ownership, visa quota, restrictions) before you commit." },
   { q: 'Will I have a dedicated advisor?', a: "Yes. You're paired with a single point of contact who owns your file end-to-end and stays with you through renewals and future filings." },
 ];
 
@@ -19,7 +19,7 @@ export default function FAQ() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">FAQ</p>
           <h2 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">Questions, answered plainly.</h2>
           <p className="mt-4 text-sm text-muted-foreground">Common questions from founders and product managers navigating UAE compliance.</p>
-          <Link href="/contact" className="mt-6 inline-block text-sm font-semibold text-primary hover:underline">Ask something specific →</Link>
+          <Link href="/contact" className="mt-6 inline-block text-sm font-semibold text-primary hover:underline">Ask something specific â†’</Link>
         </div>
         <div className="md:col-span-8">
           <ul className="divide-y divide-border border-y border-border">

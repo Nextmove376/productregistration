@@ -13,10 +13,10 @@ export default function WhyUs() {
             next step to take.
           </h2>
           <p className="mt-8 max-w-md text-[var(--cream)]/70">
-            We&apos;re transparent like that. No gimmicks, no surprise invoices — just clear scopes, honest timelines, and a single owner on your file.
+            We&apos;re transparent like that. No gimmicks, no surprise invoices â€” just clear scopes, honest timelines, and a single owner on your file.
           </p>
           <Link href="/contact" className="mt-10 inline-block rounded-full bg-[var(--teal)] px-7 py-3.5 text-sm font-medium text-[var(--navy)]">
-            Schedule a call →
+            Schedule a call â†’
           </Link>
         </div>
         <div className="relative">

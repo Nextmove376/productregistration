@@ -1,4 +1,4 @@
-﻿export default function ServiceGrid({ items }: { items: string[] }) {
+export default function ServiceGrid({ items }: { items: string[] }) {
   return (
     <div className="mt-8 grid gap-4 sm:grid-cols-2">
       {items.map((item, i) => (

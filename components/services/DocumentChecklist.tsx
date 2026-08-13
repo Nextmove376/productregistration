@@ -1,4 +1,4 @@
-﻿export default function DocumentChecklist({ documents }: { documents: { text: string; required?: boolean }[] }) {
+export default function DocumentChecklist({ documents }: { documents: { text: string; required?: boolean }[] }) {
   return (
     <div className="mt-8 rounded-2xl border border-border bg-[var(--cream)] p-6">
       <ul className="space-y-3">
