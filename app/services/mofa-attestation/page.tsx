@@ -1,62 +1,60 @@
-import Link from 'next/link';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+﻿import type { Metadata } from "next";
+import ServicePageLayout from "@/components/services/ServicePageLayout";
+import type { ServicePageData } from "@/components/services/ServicePageLayout";
+
+export const metadata: Metadata = {
+  title: "MOFA Attestation Dubai - Document Legalization & PRO Services - NextMove",
+  description: "MOFA attestation, embassy legalization, certified translations, and PRO services in Dubai. Fast processing. Free consultation.",
+};
+
+const d: ServicePageData = {
+  serviceName: "MOFA Attestation",
+  tag: "Government Services",
+  title: "MOFA Attestation & PRO Services",
+  subtitle: "Document attestation, embassy legalization, and public relations paperwork handled end-to-end",
+  heroDescription: "We handle MOFA attestation, embassy legalization, certified translations, and all PRO services at government counters.",
+  trustBadge: "Authorized PRO Services Provider",
+  overview: "Document attestation and legalization is a critical requirement for businesses operating in the UAE. Whether you need educational certificates attested for employment, commercial documents legalized for business setup, or product certificates verified for registration, the process involves multiple government entities. At NextMove, we handle the entire attestation chain from origin country verification through MOFA attestation and embassy legalization.",
+  process: [
+    { step: 1, title: "Document Review", description: "We assess which documents need attestation and the required chain.", timeline: "1 day" },
+    { step: 2, title: "Origin Verification", description: "We coordinate verification in the country of origin.", timeline: "1-2 weeks" },
+    { step: 3, title: "MOFA Submission", description: "We submit documents to UAE Ministry of Foreign Affairs.", timeline: "2-3 days" },
+    { step: 4, title: "Embassy Legalization", description: "We process embassy legalization where required.", timeline: "3-5 days" },
+    { step: 5, title: "Translation", description: "We arrange certified Arabic translations.", timeline: "2-3 days" },
+    { step: 6, title: "Delivery", description: "We deliver fully attested and translated documents.", timeline: "1 day" },
+  ],
+  included: ["MOFA attestation", "Embassy legalization", "Certified translations", "Visa and Emirates ID processing", "Corporate PRO retainer", "Document clearance"],
+  documents: [
+    { text: "Original documents to be attested" },
+    { text: "Passport copies" },
+    { text: "Previous attestation certificates (if any)" },
+    { text: "Authorization letter" },
+  ],
+  pricing: [
+    { service: "MOFA Attestation (per document)", timeline: "2-3 days", price: "AED 300" },
+    { service: "Embassy Legalization", timeline: "3-5 days", price: "AED 500" },
+    { service: "Certified Translation", timeline: "2-3 days", price: "AED 200" },
+    { service: "PRO Retainer (monthly)", timeline: "Ongoing", price: "AED 2,000" },
+  ],
+  differentiators: [
+    { icon: "shield", title: "Government Access", description: "Direct access to MOFA and embassy counters." },
+    { icon: "clock", title: "Fast Turnaround", description: "Most attestations completed within one week." },
+    { icon: "check", title: "Full Chain", description: "We handle the entire attestation chain end-to-end." },
+    { icon: "users", title: "Experienced PROs", description: "Team with years of government liaison experience." },
+  ],
+  faq: [
+    { question: "What is MOFA attestation?", answer: "MOFA attestation is the UAE Ministry of Foreign Affairs verification of documents for legal use in the UAE." },
+    { question: "How long does attestation take?", answer: "2-7 days for MOFA attestation. Full chain including origin verification: 2-4 weeks." },
+    { question: "Which documents need attestation?", answer: "Educational certificates, commercial documents, power of attorney, and product certificates typically need attestation." },
+    { question: "Do you handle translations?", answer: "Yes, we provide certified Arabic translations as part of our attestation service." },
+  ],
+  relatedServices: [
+    { slug: "business-setup", title: "Business Setup", summary: "Company formation and trade license.", tag: "Formation" },
+    { slug: "regulatory-approvals", title: "Regulatory Approvals", summary: "Certifications and compliance.", tag: "Compliance" },
+    { slug: "product-registration", title: "Product Registration", summary: "Register products for UAE market.", tag: "Compliance" },
+  ],
+};
 
 export default function MOFAPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Header />
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, var(--teal), transparent 40%)' }} />
-        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-24 md:pt-32">
-          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> government
-          </div>
-          <h1 className="text-5xl leading-[1.02] tracking-tight md:text-[6rem]">
-            MOFA & PRO<br />
-            <span className="italic text-[var(--teal)]/90">Services.</span>
-          </h1>
-          <p className="mt-8 max-w-xl text-base leading-relaxed text-[var(--cream)]/70">
-            Attestations, translations and public-relations paperwork handled by hand at the counter.
-          </p>
-        </div>
-      </section>
-      <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-        <div className="grid gap-12 md:grid-cols-12">
-          <div className="md:col-span-5">
-            <h2 className="font-serif text-4xl leading-tight">What&apos;s included</h2>
-            <p className="mt-6 text-muted-foreground">Typical timeline: 1–3 weeks</p>
-          </div>
-          <div className="md:col-span-7">
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {['MOFA attestation', 'Embassy legalisation', 'Certified translations', 'Visa & Emirates ID', 'Corporate PRO retainer'].map((it) => (
-                <li key={it} className="flex items-start gap-3 rounded-2xl border border-border bg-[var(--cream)] p-5 text-sm">
-                  <span className="mt-0.5 text-[var(--teal)]">✦</span>
-                  <span>{it}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-          <div className="grid gap-12 md:grid-cols-12 md:items-end">
-            <div className="md:col-span-8">
-              <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
-                Ready to start?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
-              </h2>
-            </div>
-            <div className="md:col-span-4">
-              <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
-                <span className="font-serif text-lg">Book a free consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
+  return <ServicePageLayout data={d} />;
 }

@@ -1,62 +1,61 @@
-import Link from 'next/link';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+﻿import type { Metadata } from "next";
+import ServicePageLayout from "@/components/services/ServicePageLayout";
+import type { ServicePageData } from "@/components/services/ServicePageLayout";
+
+export const metadata: Metadata = {
+  title: "Regulatory Approvals UAE - ESMA, GMP, Halal Certification - NextMove",
+  description: "Obtain regulatory approvals including ESMA certification, GMP verification, Halal certification, and lab testing coordination. Free assessment.",
+};
+
+const d: ServicePageData = {
+  serviceName: "Regulatory Approvals",
+  tag: "Compliance & Certification",
+  title: "Regulatory Approvals in the UAE",
+  subtitle: "Certifications and compliance documentation your products need before reaching a regulator",
+  heroDescription: "We coordinate all prerequisite certifications including free-sale certificates, GMP verification, lab testing, and Halal certification.",
+  trustBadge: "Certified Compliance Consultant",
+  overview: "Before a product can be registered with UAE authorities, it often needs prerequisite certifications: free-sale certificates from the country of origin, GMP verification, laboratory testing, Halal certification, and ISO alignment. These documents form the foundation of any successful registration application. At NextMove, we coordinate the entire certification chain so your registration dossier is complete and compliant from day one.",
+  process: [
+    { step: 1, title: "Gap Analysis", description: "We identify which certifications your products already have and which are missing.", timeline: "1-2 days" },
+    { step: 2, title: "Certification Planning", description: "We create a roadmap for obtaining all required certifications.", timeline: "2-3 days" },
+    { step: 3, title: "Lab Coordination", description: "We coordinate testing with accredited laboratories.", timeline: "1-3 weeks" },
+    { step: 4, title: "Application Filing", description: "We submit certification applications to relevant bodies.", timeline: "3-5 days" },
+    { step: 5, title: "Follow-up", description: "We track progress and handle any queries.", timeline: "2-6 weeks" },
+    { step: 6, title: "Certificate Delivery", description: "We deliver all completed certifications.", timeline: "1-3 days" },
+  ],
+  included: ["Free-sale certificates", "GMP verification", "Lab testing coordination", "Halal certification", "ISO alignment", "Certificate attestation"],
+  documents: [
+    { text: "Existing certifications from country of origin" },
+    { text: "Manufacturing facility details" },
+    { text: "Product specifications" },
+    { text: "Previous audit reports" },
+    { text: "Quality management documentation" },
+  ],
+  pricing: [
+    { service: "Free-Sale Certificate Processing", timeline: "2-4 weeks", price: "AED 1,500" },
+    { service: "GMP Verification", timeline: "4-8 weeks", price: "AED 3,000" },
+    { service: "Halal Certification", timeline: "4-6 weeks", price: "AED 2,500" },
+    { service: "Lab Testing Coordination", timeline: "2-4 weeks", price: "AED 1,000" },
+  ],
+  differentiators: [
+    { icon: "shield", title: "Accredited Partners", description: "We work with accredited labs and certification bodies." },
+    { icon: "clock", title: "Parallel Processing", description: "We run multiple certifications simultaneously." },
+    { icon: "check", title: "Complete Chain", description: "We manage the entire certification chain end-to-end." },
+    { icon: "users", title: "Compliance Experts", description: "Team with deep regulatory knowledge." },
+  ],
+  faq: [
+    { question: "What certifications do I need for UAE product registration?", answer: "Typically: Free-Sale Certificate, GMP Certificate, and lab test reports. Some products also need Halal certification." },
+    { question: "How long does it take to get certified?", answer: "2-8 weeks depending on the certification type and your existing documentation." },
+    { question: "Can I get certifications from any country?", answer: "Certifications must be from recognized authorities in the country of manufacture." },
+    { question: "Do you handle attestation and legalization?", answer: "Yes, we manage MOFA attestation and embassy legalization for all documents." },
+  ],
+  relatedServices: [
+    { slug: "product-registration", title: "Product Registration", summary: "Register products for UAE market.", tag: "Compliance" },
+    { slug: "mohap-registration", title: "MOHAP Registration", summary: "Medical device and pharma registration.", tag: "Healthcare" },
+    { slug: "mofa-attestation", title: "MOFA Attestation", summary: "Document legalization.", tag: "Legal" },
+  ],
+};
 
 export default function RegulatoryApprovalsPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Header />
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, var(--teal), transparent 40%)' }} />
-        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-24 md:pt-32">
-          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> compliance
-          </div>
-          <h1 className="text-5xl leading-[1.02] tracking-tight md:text-[6rem]">
-            Regulatory<br />
-            <span className="italic text-[var(--teal)]/90">Approvals.</span>
-          </h1>
-          <p className="mt-8 max-w-xl text-base leading-relaxed text-[var(--cream)]/70">
-            The certifications and audits your file needs before it ever reaches a regulator.
-          </p>
-        </div>
-      </section>
-      <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-        <div className="grid gap-12 md:grid-cols-12">
-          <div className="md:col-span-5">
-            <h2 className="font-serif text-4xl leading-tight">What&apos;s included</h2>
-            <p className="mt-6 text-muted-foreground">Typical timeline: 2–6 weeks</p>
-          </div>
-          <div className="md:col-span-7">
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {['Free-sale certificates', 'GMP verification', 'Lab testing coordination', 'Halal certification', 'ISO alignment'].map((it) => (
-                <li key={it} className="flex items-start gap-3 rounded-2xl border border-border bg-[var(--cream)] p-5 text-sm">
-                  <span className="mt-0.5 text-[var(--teal)]">✦</span>
-                  <span>{it}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-          <div className="grid gap-12 md:grid-cols-12 md:items-end">
-            <div className="md:col-span-8">
-              <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
-                Ready to start?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
-              </h2>
-            </div>
-            <div className="md:col-span-4">
-              <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
-                <span className="font-serif text-lg">Book a free consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
+  return <ServicePageLayout data={d} />;
 }

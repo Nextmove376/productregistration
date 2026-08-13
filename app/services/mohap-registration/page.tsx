@@ -1,62 +1,64 @@
-import Link from 'next/link';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+﻿import type { Metadata } from "next";
+import ServicePageLayout from "@/components/services/ServicePageLayout";
+import type { ServicePageData } from "@/components/services/ServicePageLayout";
+
+export const metadata: Metadata = {
+  title: "MOHAP Registration UAE - Medical Devices & Pharmaceuticals - NextMove",
+  description: "Register medical devices, medicines and pharmaceuticals with MOHAP. End-to-end registration service. Free assessment.",
+};
+
+const d: ServicePageData = {
+  serviceName: "MOHAP Registration",
+  tag: "Healthcare Regulatory",
+  title: "MOHAP / EDE Registration",
+  subtitle: "Medical devices, medicines and pharmaceuticals approved by the UAE Ministry of Health",
+  heroDescription: "We manage the entire MOHAP registration process for medical devices, prescription medicines, OTC drugs, and health products.",
+  trustBadge: "MOHAP Registered Consultant",
+  overview: "The Ministry of Health and Prevention (MOHAP) regulates all medical devices, pharmaceuticals, and health products in the UAE. Registration is mandatory before any healthcare product can be marketed or sold. The process requires detailed dossiers, clinical data, and compliance with UAE-specific labeling requirements. At NextMove, we have extensive experience navigating MOHAP requirements and maintain direct communication with the registration department.",
+  process: [
+    { step: 1, title: "Product Classification", description: "We classify your product under the correct MOHAP category.", timeline: "1-2 days" },
+    { step: 2, title: "Dossier Preparation", description: "We compile technical dossiers, clinical data, and safety reports.", timeline: "1-2 weeks" },
+    { step: 3, title: "Label Review", description: "We ensure Arabic labeling and UAE-specific requirements.", timeline: "3-5 days" },
+    { step: 4, title: "Submission", description: "We file the complete application with MOHAP.", timeline: "1 day" },
+    { step: 5, title: "Authority Review", description: "We track progress and respond to queries.", timeline: "4-12 weeks" },
+    { step: 6, title: "Approval", description: "We collect your MOHAP registration certificate.", timeline: "1-3 days" },
+  ],
+  included: ["Class I-IV medical devices", "Prescription medicines", "Over-the-counter drugs", "Health supplements", "Establishment licensing", "Renewals and variations"],
+  documents: [
+    { text: "Free Sale Certificate from country of origin" },
+    { text: "GMP Certificate" },
+    { text: "Technical dossier / product master file" },
+    { text: "Clinical evaluation reports" },
+    { text: "Risk analysis documentation" },
+    { text: "Product labels in Arabic and English" },
+    { text: "Manufacturing license" },
+    { text: "Power of Attorney" },
+  ],
+  pricing: [
+    { service: "Medical Device Registration", timeline: "8-14 weeks", price: "AED 5,000" },
+    { service: "Pharmaceutical Registration", timeline: "12-20 weeks", price: "AED 8,000" },
+    { service: "Health Supplement Registration", timeline: "6-10 weeks", price: "AED 3,500" },
+    { service: "Establishment License", timeline: "4-6 weeks", price: "AED 3,000" },
+  ],
+  differentiators: [
+    { icon: "shield", title: "MOHAP Relationships", description: "Direct access to MOHAP registration department." },
+    { icon: "clock", title: "Dossier Expertise", description: "We know exactly what MOHAP reviewers look for." },
+    { icon: "check", title: "High Approval Rate", description: "Thorough preparation reduces rejection risk." },
+    { icon: "users", title: "Healthcare Specialists", description: "Team with pharmaceutical and medical device expertise." },
+  ],
+  faq: [
+    { question: "How long does MOHAP registration take?", answer: "8-20 weeks depending on product class and complexity." },
+    { question: "What products need MOHAP registration?", answer: "All medical devices, pharmaceuticals, and health products sold in UAE." },
+    { question: "How much does it cost?", answer: "From AED 3,500 for supplements to AED 8,000+ for pharmaceuticals." },
+    { question: "Do I need a local authorized representative?", answer: "Yes, you need a UAE-based authorized representative or local agent." },
+  ],
+  relatedServices: [
+    { slug: "product-registration", title: "Product Registration", summary: "Cosmetics, food, and consumer products.", tag: "Compliance" },
+    { slug: "regulatory-approvals", title: "Regulatory Approvals", summary: "GMP verification and lab testing.", tag: "Compliance" },
+    { slug: "medical-drugstore", title: "Pharmacy Setup", summary: "Drugstore licensing and setup.", tag: "Healthcare" },
+  ],
+};
 
 export default function MOHAPPage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Header />
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, var(--teal), transparent 40%)' }} />
-        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-24 md:pt-32">
-          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> regulatory
-          </div>
-          <h1 className="text-5xl leading-[1.02] tracking-tight md:text-[6rem]">
-            MOHAP / EDE<br />
-            <span className="italic text-[var(--teal)]/90">Registration.</span>
-          </h1>
-          <p className="mt-8 max-w-xl text-base leading-relaxed text-[var(--cream)]/70">
-            Medical devices, medicines and pharmaceutical dossiers prepared, submitted and shepherded to approval.
-          </p>
-        </div>
-      </section>
-      <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-        <div className="grid gap-12 md:grid-cols-12">
-          <div className="md:col-span-5">
-            <h2 className="font-serif text-4xl leading-tight">What&apos;s included</h2>
-            <p className="mt-6 text-muted-foreground">Typical timeline: 8–14 weeks</p>
-          </div>
-          <div className="md:col-span-7">
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {['Class I–IV medical devices', 'Prescription medicines', 'Over-the-counter drugs', 'Establishment licensing', 'Renewals & variations'].map((it) => (
-                <li key={it} className="flex items-start gap-3 rounded-2xl border border-border bg-[var(--cream)] p-5 text-sm">
-                  <span className="mt-0.5 text-[var(--teal)]">✦</span>
-                  <span>{it}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-          <div className="grid gap-12 md:grid-cols-12 md:items-end">
-            <div className="md:col-span-8">
-              <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
-                Ready to start?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
-              </h2>
-            </div>
-            <div className="md:col-span-4">
-              <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
-                <span className="font-serif text-lg">Book a free consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
+  return <ServicePageLayout data={d} />;
 }

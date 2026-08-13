@@ -1,62 +1,61 @@
-import Link from 'next/link';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+﻿import type { Metadata } from "next";
+import ServicePageLayout from "@/components/services/ServicePageLayout";
+import type { ServicePageData } from "@/components/services/ServicePageLayout";
+
+export const metadata: Metadata = {
+  title: "Pharmacy Setup Dubai - Drugstore License & Medical Registration - NextMove",
+  description: "Set up a pharmacy or drugstore in Dubai. UAE trademark registration, drugstore licensing, and medical store setup. Free consultation.",
+};
+
+const d: ServicePageData = {
+  serviceName: "Medical & Drugstore",
+  tag: "Healthcare Business",
+  title: "Trademark & Drugstore Setup",
+  subtitle: "UAE trademark registration and turnkey medical drugstore setup with full compliance",
+  heroDescription: "We handle trademark filing, drugstore establishment, pharmacy licensing, and all ministry inspections.",
+  trustBadge: "Licensed Healthcare Consultant",
+  overview: "Setting up a pharmacy or drugstore in the UAE requires navigating MOHAP licensing, Dubai Municipality inspections, and strict regulatory compliance. From trademark registration to pharmacy fit-out advisory and ministry inspections, every step must meet healthcare standards. At NextMove, we provide end-to-end support for healthcare business setup, ensuring your pharmacy or drugstore launches fully compliant.",
+  process: [
+    { step: 1, title: "Feasibility Assessment", description: "We assess your business model and regulatory requirements.", timeline: "1-2 days" },
+    { step: 2, title: "Trademark Filing", description: "We file UAE trademark applications.", timeline: "1 day" },
+    { step: 3, title: "License Application", description: "We prepare and submit drugstore license applications.", timeline: "1-2 weeks" },
+    { step: 4, title: "Fit-out Advisory", description: "We advise on pharmacy layout and compliance requirements.", timeline: "1-2 weeks" },
+    { step: 5, title: "Ministry Inspections", description: "We coordinate MOHAP and municipality inspections.", timeline: "2-4 weeks" },
+    { step: 6, title: "Opening", description: "We deliver all licenses and approvals for opening.", timeline: "1-3 days" },
+  ],
+  included: ["UAE trademark filing", "Trademark opposition", "Drugstore establishment", "Pharmacy fit-out advisory", "Ministry inspections", "License renewals"],
+  documents: [
+    { text: "Passport copies of owners" },
+    { text: "Pharmacist qualification certificates" },
+    { text: "Proposed pharmacy location details" },
+    { text: "Trade name reservation" },
+    { text: "No objection certificate" },
+  ],
+  pricing: [
+    { service: "Trademark Registration", timeline: "4-6 months", price: "AED 5,000" },
+    { service: "Drugstore License", timeline: "4-8 weeks", price: "AED 15,000" },
+    { service: "Pharmacy Fit-out Advisory", timeline: "1-2 weeks", price: "AED 3,000" },
+    { service: "Inspection Coordination", timeline: "2-4 weeks", price: "AED 2,000" },
+  ],
+  differentiators: [
+    { icon: "shield", title: "Healthcare Expertise", description: "Deep knowledge of MOHAP pharmacy requirements." },
+    { icon: "clock", title: "Turnkey Solutions", description: "From license to opening day." },
+    { icon: "check", title: "Compliance Guaranteed", description: "We ensure full regulatory compliance." },
+    { icon: "users", title: "Pharmacy Specialists", description: "Team with healthcare business experience." },
+  ],
+  faq: [
+    { question: "How do I open a pharmacy in Dubai?", answer: "You need MOHAP approval, a drugstore license, qualified pharmacist, and compliant premises. We handle the entire process." },
+    { question: "How long does it take?", answer: "4-8 weeks for licensing. Trademark registration takes 4-6 months separately." },
+    { question: "How much does it cost?", answer: "From AED 15,000 for drugstore licensing. Trademark registration from AED 5,000." },
+    { question: "Do I need a pharmacist?", answer: "Yes, UAE law requires a licensed pharmacist to manage every pharmacy." },
+  ],
+  relatedServices: [
+    { slug: "mohap-registration", title: "MOHAP Registration", summary: "Medical device and pharma registration.", tag: "Healthcare" },
+    { slug: "business-setup", title: "Business Setup", summary: "Company formation and trade license.", tag: "Formation" },
+    { slug: "regulatory-approvals", title: "Regulatory Approvals", summary: "Certifications and compliance.", tag: "Compliance" },
+  ],
+};
 
 export default function MedicalDrugstorePage() {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Header />
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, var(--teal), transparent 40%)' }} />
-        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-24 md:pt-32">
-          <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> specialist
-          </div>
-          <h1 className="text-5xl leading-[1.02] tracking-tight md:text-[6rem]">
-            Trademark &<br />
-            <span className="italic text-[var(--teal)]/90">Drugstore.</span>
-          </h1>
-          <p className="mt-8 max-w-xl text-base leading-relaxed text-[var(--cream)]/70">
-            UAE trademark registration and turnkey medical drugstore setup with full compliance stack.
-          </p>
-        </div>
-      </section>
-      <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-        <div className="grid gap-12 md:grid-cols-12">
-          <div className="md:col-span-5">
-            <h2 className="font-serif text-4xl leading-tight">What&apos;s included</h2>
-            <p className="mt-6 text-muted-foreground">Timeline: Varies</p>
-          </div>
-          <div className="md:col-span-7">
-            <ul className="grid gap-4 sm:grid-cols-2">
-              {['UAE trademark filing', 'Trademark opposition', 'Drugstore establishment', 'Pharmacy fit-out advisory', 'Ministry inspections'].map((it) => (
-                <li key={it} className="flex items-start gap-3 rounded-2xl border border-border bg-[var(--cream)] p-5 text-sm">
-                  <span className="mt-0.5 text-[var(--teal)]">✦</span>
-                  <span>{it}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-          <div className="grid gap-12 md:grid-cols-12 md:items-end">
-            <div className="md:col-span-8">
-              <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
-                Ready to start?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
-              </h2>
-            </div>
-            <div className="md:col-span-4">
-              <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
-                <span className="font-serif text-lg">Book a free consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-      <Footer />
-    </div>
-  );
+  return <ServicePageLayout data={d} />;
 }

@@ -1,0 +1,264 @@
+﻿import Link from 'next/link';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import Breadcrumb from '@/components/services/Breadcrumb';
+import ProcessSteps from '@/components/services/ProcessSteps';
+import ServiceGrid from '@/components/services/ServiceGrid';
+import DocumentChecklist from '@/components/services/DocumentChecklist';
+import PricingTable from '@/components/services/PricingTable';
+import WhyChooseUs from '@/components/services/WhyChooseUs';
+import FAQAccordion from '@/components/services/FAQAccordion';
+import RelatedServices from '@/components/services/RelatedServices';
+import StickyMobileCTA from '@/components/services/StickyMobileCTA';
+
+export interface ProcessStep {
+  step: number;
+  title: string;
+  description: string;
+  timeline: string;
+}
+
+export interface Document {
+  text: string;
+  required?: boolean;
+}
+
+export interface PricingRow {
+  service: string;
+  timeline: string;
+  price: string;
+}
+
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
+export interface RelatedService {
+  slug: string;
+  title: string;
+  summary: string;
+  tag: string;
+}
+
+export interface ServicePageData {
+  tag: string;
+  title: string;
+  subtitle: string;
+  heroDescription: string;
+  trustBadge?: string;
+  overview: string;
+  process: ProcessStep[];
+  included: string[];
+  documents: Document[];
+  pricing: PricingRow[];
+  differentiators: { icon: string; title: string; description: string }[];
+  caseStudy?: { title: string; problem: string; solution: string; result: string; quote?: string; client?: string };
+  faq: FAQ[];
+  relatedServices: RelatedService[];
+  serviceName: string;
+}
+
+export default function ServicePageLayout({ data }: { data: ServicePageData }) {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Header />
+      <StickyMobileCTA serviceName={data.serviceName} />
+
+      {/* Breadcrumb */}
+      <div className="mx-auto max-w-7xl px-6 pt-6">
+        <Breadcrumb items={[{ label: 'Services', href: '/services' }, { label: data.title }]} />
+      </div>
+
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
+        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, var(--teal), transparent 40%)' }} />
+        <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-16 md:pb-28 md:pt-24">
+          <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> {data.tag}
+          </div>
+          <h1 className="text-4xl leading-[1.02] tracking-tight md:text-[4.5rem]">{data.title}</h1>
+          <p className="mt-4 text-lg font-medium text-[var(--teal)]">{data.subtitle}</p>
+          <p className="mt-6 max-w-2xl text-base leading-relaxed text-[var(--cream)]/70">{data.heroDescription}</p>
+          {data.trustBadge && (
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-2 text-sm text-[var(--cream)]/80">
+              <svg className="h-4 w-4 text-[var(--teal)]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+              {data.trustBadge}
+            </div>
+          )}
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link href={`/contact?service=${encodeURIComponent(data.serviceName)}`} className="rounded-full bg-[var(--teal)] px-8 py-4 text-sm font-semibold text-[var(--navy)] transition-all hover:-translate-y-0.5 hover:shadow-lg">
+              Get Free Assessment
+            </Link>
+            <a href="tel:+971529102088" className="rounded-full border border-[var(--cream)]/30 px-8 py-4 text-sm font-semibold text-[var(--cream)] transition-all hover:bg-[var(--cream)]/10">
+              Call +971 52 910 2088
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust Bar */}
+      <section className="border-b border-border bg-[var(--cream)]">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-8 px-6 py-8 md:justify-between">
+          <div className="flex items-center gap-8">
+            <img src="/logos/mohap-1.svg" alt="MOHAP" className="h-8 w-auto opacity-60 grayscale" />
+            <img src="/logos/DRUG.svg" alt="Dubai Municipality" className="h-8 w-auto opacity-60 grayscale" />
+            <img src="/logos/67da7400f25dbf4c5bb11dc0_Meydan-FZ.webp" alt="Meydan Free Zone" className="h-8 w-auto opacity-60 grayscale" />
+            <img src="/logos/SPCFZ-Sharjah.png" alt="SPC Free Zone" className="h-8 w-auto opacity-60 grayscale hidden md:block" />
+          </div>
+          <div className="flex gap-8 text-center">
+            <div><p className="text-2xl font-bold text-[var(--navy)]">500+</p><p className="text-xs text-muted-foreground">Products Registered</p></div>
+            <div><p className="text-2xl font-bold text-[var(--navy)]">10+</p><p className="text-xs text-muted-foreground">Years Experience</p></div>
+            <div><p className="text-2xl font-bold text-[var(--navy)]">98%</p><p className="text-xs text-muted-foreground">Success Rate</p></div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content with Sidebar */}
+      <section className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+        <div className="grid gap-12 lg:grid-cols-12">
+          {/* Main Content */}
+          <div className="lg:col-span-8 space-y-16 md:space-y-24">
+            {/* Overview */}
+            <div>
+              <h2 className="font-serif text-3xl leading-tight md:text-4xl">What is {data.title.split('—')[0].trim()}?</h2>
+              <div className="prose prose-lg mt-6 max-w-none text-muted-foreground leading-relaxed">
+                {data.overview.split('\n\n').map((p, i) => <p key={i}>{p}</p>)}
+              </div>
+            </div>
+
+            {/* How It Works */}
+            <div>
+              <h2 className="font-serif text-3xl leading-tight md:text-4xl">How We Handle Your {data.title.split('—')[0].trim().split(' ').slice(-2).join(' ')}</h2>
+              <ProcessSteps steps={data.process} />
+            </div>
+
+            {/* What's Included */}
+            <div>
+              <h2 className="font-serif text-3xl leading-tight md:text-4xl">What We Register</h2>
+              <ServiceGrid items={data.included} />
+            </div>
+
+            {/* Documents Required */}
+            <div>
+              <h2 className="font-serif text-3xl leading-tight md:text-4xl">Documents You&apos;ll Need</h2>
+              <DocumentChecklist documents={data.documents} />
+            </div>
+
+            {/* Timelines & Pricing */}
+            <div>
+              <h2 className="font-serif text-3xl leading-tight md:text-4xl">Timeline & Investment</h2>
+              <PricingTable rows={data.pricing} />
+            </div>
+          </div>
+
+          {/* Sticky Sidebar */}
+          <aside className="lg:col-span-4">
+            <div className="sticky top-24 space-y-6">
+              <div className="rounded-2xl border border-border bg-[var(--cream)] p-6">
+                <h3 className="font-serif text-xl">Get a Free Assessment</h3>
+                <p className="mt-2 text-sm text-muted-foreground">Tell us about your project and we&apos;ll provide a detailed timeline and quote.</p>
+                <Link href={`/contact?service=${encodeURIComponent(data.serviceName)}`} className="mt-4 flex w-full items-center justify-center rounded-xl bg-[var(--navy)] py-3 text-sm font-semibold text-[var(--cream)] transition hover:opacity-90">
+                  Start Now
+                </Link>
+              </div>
+              <div className="rounded-2xl border border-border bg-[var(--cream)] p-6">
+                <h3 className="font-serif text-lg">Need Help Now?</h3>
+                <div className="mt-4 space-y-3">
+                  <a href="tel:+971529102088" className="flex items-center gap-3 rounded-xl border border-border p-3 text-sm transition hover:border-[var(--teal)]/40">
+                    <svg className="h-5 w-5 text-[var(--teal)]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                    +971 52 910 2088
+                  </a>
+                  <a href="https://wa.me/971529102088" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-xl border border-border p-3 text-sm transition hover:border-green-400">
+                    <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                    WhatsApp Us
+                  </a>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border bg-[var(--cream)] p-6">
+                <h3 className="font-serif text-lg">Why Choose NextMove</h3>
+                <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+                  {data.differentiators.slice(0, 3).map((d, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <svg className="mt-0.5 h-4 w-4 shrink-0 text-[var(--teal)]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      <span>{d.title}: {d.description}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      {/* Why Choose Us */}
+      <section className="border-t border-border bg-[var(--cream)]">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+          <h2 className="font-serif text-3xl leading-tight md:text-4xl">Why Businesses Choose NextMove</h2>
+          <WhyChooseUs differentiators={data.differentiators} />
+        </div>
+      </section>
+
+      {/* Case Study */}
+      {data.caseStudy && (
+        <section className="border-t border-border">
+          <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+            <h2 className="font-serif text-3xl leading-tight md:text-4xl">Success Story</h2>
+            <div className="mt-8 rounded-2xl border border-border bg-[var(--cream)] p-8 md:p-12">
+              <h3 className="font-serif text-2xl">{data.caseStudy.title}</h3>
+              <div className="mt-6 grid gap-6 md:grid-cols-3">
+                <div><h4 className="text-xs uppercase tracking-wider text-[var(--teal-deep)]">Challenge</h4><p className="mt-2 text-sm text-muted-foreground">{data.caseStudy.problem}</p></div>
+                <div><h4 className="text-xs uppercase tracking-wider text-[var(--teal-deep)]">Solution</h4><p className="mt-2 text-sm text-muted-foreground">{data.caseStudy.solution}</p></div>
+                <div><h4 className="text-xs uppercase tracking-wider text-[var(--teal-deep)]">Result</h4><p className="mt-2 text-sm text-muted-foreground">{data.caseStudy.result}</p></div>
+              </div>
+              {data.caseStudy.quote && (
+                <blockquote className="mt-8 border-l-4 border-[var(--teal)] pl-6 italic text-muted-foreground">
+                  &ldquo;{data.caseStudy.quote}&rdquo;
+                  {data.caseStudy.client && <footer className="mt-2 not-italic text-sm font-medium text-foreground">— {data.caseStudy.client}</footer>}
+                </blockquote>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* FAQ */}
+      <section className="border-t border-border">
+        <div className="mx-auto max-w-3xl px-6 py-16 md:py-24">
+          <h2 className="text-center font-serif text-3xl leading-tight md:text-4xl">Frequently Asked Questions</h2>
+          <FAQAccordion faqs={data.faq} />
+        </div>
+      </section>
+
+      {/* Related Services */}
+      <section className="border-t border-border bg-[var(--cream)]">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
+          <h2 className="font-serif text-3xl leading-tight md:text-4xl">Related Services</h2>
+          <RelatedServices services={data.relatedServices} />
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
+        <div className="mx-auto max-w-7xl px-6 py-20 md:py-28">
+          <div className="grid gap-12 md:grid-cols-12 md:items-end">
+            <div className="md:col-span-8">
+              <h2 className="font-serif text-4xl leading-[1.02] md:text-6xl">
+                Ready to get started?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
+              </h2>
+              <p className="mt-4 max-w-lg text-[var(--cream)]/70">Book a free assessment. We&apos;ll review your requirements and provide a detailed timeline and quote within 24 hours.</p>
+            </div>
+            <div className="md:col-span-4">
+              <Link href={`/contact?service=${encodeURIComponent(data.serviceName)}`} className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
+                <span className="font-serif text-lg">Book Free Assessment</span>
+                <span className="text-2xl transition-transform group-hover:translate-x-1">{'\u2192'}</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </div>
+  );
+}
