@@ -244,7 +244,7 @@ export default function ServicePageLayout({ data }: { data: ServicePageData }) {
             {/* Pricing */}
             <div>
               <h2 className="font-serif text-3xl leading-tight md:text-4xl">{data.serviceName} Pricing</h2>
-              <PricingTable pricing={data.pricing} />
+              <PricingTable rows={data.pricing} />
             </div>
 
             {/* Case Study */}
@@ -366,3 +366,4 @@ export default function ServicePageLayout({ data }: { data: ServicePageData }) {
     </div>
   );
 }
+
