@@ -16,11 +16,27 @@ export const metadata: Metadata = {
   },
 };
 
+// Static fallback services in case database is not available
+const fallbackServices = [
+  { slug: "product-registration", title: "Product Registration", tag: "Product Compliance", summary: "Register cosmetics, food, supplements, and consumer products with Dubai Municipality, ESMA, and MOIAT." },
+  { slug: "mohap-registration", title: "MOHAP Registration", tag: "Healthcare Regulatory", summary: "Register medical devices, pharmaceuticals, and health products with the UAE Ministry of Health." },
+  { slug: "business-setup", title: "Business Setup", tag: "Company Formation", summary: "Mainland, freezone, and offshore company formation in Dubai and the UAE." },
+  { slug: "mofa-attestation", title: "MOFA Attestation", tag: "Government Services", summary: "Document attestation, embassy legalization, and PRO services in Dubai." },
+  { slug: "medical-drugstore", title: "Medical & Drugstore", tag: "Healthcare Business", summary: "Pharmacy setup, drugstore licensing, and trademark registration." },
+  { slug: "regulatory-approvals", title: "Regulatory Approvals", tag: "Compliance & Certification", summary: "ESMA certification, GMP verification, Halal certification, and lab testing." },
+];
+
 async function getServices() {
-  const [rows] = await pool.execute(
-    'SELECT slug, title, tag, summary, icon FROM services WHERE is_active = 1 ORDER BY sort_order'
-  );
-  return rows as any[];
+  try {
+    const [rows] = await pool.execute(
+      'SELECT slug, title, tag, summary, icon FROM services WHERE is_active = 1 ORDER BY sort_order'
+    );
+    const services = rows as any[];
+    return services.length > 0 ? services : fallbackServices;
+  } catch (error) {
+    console.error('Database error:', error);
+    return fallbackServices;
+  }
 }
 
 export default async function ServicesPage() {
