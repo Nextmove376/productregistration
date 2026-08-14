@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
   );
   const affected = (rows as any).affectedRows;
   if (affected > 0) {
-    revalidateTag("blog");
-    revalidateTag("services");
+    revalidateTag("blog", { revalidate: true });
+    revalidateTag("services", { revalidate: true });
   }
   return NextResponse.json({ success: true, published: affected });
 }
