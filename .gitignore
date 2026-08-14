@@ -52,3 +52,6 @@ next-env.d.ts
 
 # uploads (survives deploys via FTP)
 # /public/uploads/  # uncomment to ignore uploads in git
+
+# site directory (separate project)
+/site/
