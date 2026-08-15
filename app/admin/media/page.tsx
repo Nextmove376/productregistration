@@ -176,8 +176,9 @@ export default function AdminMediaPage() {
       setMedia(prev => prev.filter(m => m.id !== id));
       setTotal(prev => prev - 1);
       addToast('success', 'File deleted successfully');
-    } catch (err) {
-      addToast('error', 'Delete failed. Please try again.');
+    } catch (err: any) {
+      console.error('Delete error:', err);
+      addToast('error', err.message || 'Delete failed. Please try again.');
     } finally {
       setDeletingIds(prev => {
         const next = new Set(prev);
@@ -432,4 +433,7 @@ export default function AdminMediaPage() {
     </div>
   );
 }
+
+
+
 
