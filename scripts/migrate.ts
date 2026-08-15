@@ -191,6 +191,20 @@ async function migrate() {
     await pool.execute(sql);
   }
 
+
+  // Idempotent column additions for existing databases
+  const alterStatements = [
+    "ALTER TABLE media ADD COLUMN IF NOT EXISTS mime_type VARCHAR(100) DEFAULT NULL",
+    "ALTER TABLE media ADD COLUMN IF NOT EXISTS thumbnail_path VARCHAR(500) DEFAULT NULL",
+    "ALTER TABLE media ADD COLUMN IF NOT EXISTS blur_data TEXT DEFAULT NULL",
+  ];
+  for (const sql of alterStatements) {
+    try { await pool.execute(sql); } catch (e: any) {
+      // Ignore duplicate column errors (1060)
+      if (e.errno !== 1060) throw e;
+    }
+  }
+
   console.log('All tables created successfully.');
   process.exit(0);
 }

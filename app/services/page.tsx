@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     description: "Comprehensive regulatory services in Dubai & UAE. Product registration, MOHAP registration, business setup, MOFA attestation, and regulatory approvals.",
     url: "https://productregistrationinuae.com/services",
     type: "website",
-    images: ["https://productregistrationinuae.com/uploads/1786744117330-7jeaei.png"],
+    images: ["https://productregistrationinuae.com/api/media/1786744117330-7jeaei.png"],
   },
 };
 
@@ -79,7 +79,7 @@ export default async function ServicesPage() {
         {/* Background Image with Next.js Image for optimization */}
         <div className="absolute inset-0 z-0">
           <Image
-            src="/uploads/1786744117330-7jeaei.png"
+            src="/api/media/1786744117330-7jeaei.png"
             alt="Dubai regulatory services and product registration"
             fill
             className="object-cover"
