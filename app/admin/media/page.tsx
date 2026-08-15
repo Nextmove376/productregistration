@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Upload, Copy, Trash2, Check, Search, Image as ImageIcon, Edit2, X, ChevronLeft, ChevronRight, Film, Loader2 } from 'lucide-react';
 import { MediaToast, createToast, type ToastMessage } from '@/components/admin/MediaToast';
@@ -159,7 +159,7 @@ export default function AdminMediaPage() {
     setDeletingIds(prev => new Set(prev).add(id));
     
     try {
-      const res = await fetch(`/api/admin/media/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/media/${id}`, { method: 'DELETE', credentials: 'include' });
       const data = await res.json();
 
       if (!res.ok) {
@@ -191,6 +191,7 @@ export default function AdminMediaPage() {
     try {
       const res = await fetch(`/api/admin/media/${id}`, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ alt: altText }),
       });
@@ -431,3 +432,4 @@ export default function AdminMediaPage() {
     </div>
   );
 }
+

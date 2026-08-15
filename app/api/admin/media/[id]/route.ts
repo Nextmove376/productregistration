@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, checkCsrf } from "@/lib/api-auth";
 import pool from "@/lib/db";
 import { unlink } from "fs/promises";
@@ -74,12 +74,23 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  console.log("[DELETE] Request received");
+  console.log("[DELETE] Origin:", request.headers.get("origin"));
+  console.log("[DELETE] Host:", request.headers.get("host"));
+  console.log("[DELETE] Cookie present:", !!request.headers.get("cookie"));
+
   const { error } = await requireAdmin(request);
-  if (error) return error;
+  if (error) {
+    console.log("[DELETE] Auth failed:", JSON.stringify(error));
+    return error;
+  }
+  console.log("[DELETE] Auth passed");
 
   if (!checkCsrf(request)) {
+    console.log("[DELETE] CSRF failed");
     return NextResponse.json({ error: "CSRF validation failed" }, { status: 403 });
   }
+  console.log("[DELETE] CSRF passed");
 
   const { id } = await params;
   const mediaId = parseInt(id, 10);
@@ -114,7 +125,7 @@ export async function DELETE(
       {
         error: "Media is referenced by other content",
         references: refs.map((r: any) => ({ id: r.id, title: r.title })),
-        hint: "Add ?force=true to delete anyway",
+        hint: "Add ?force=true to force delete",
       },
       { status: 409 }
     );

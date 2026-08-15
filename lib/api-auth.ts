@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { verifySession, type SessionPayload } from '@/lib/auth';
 
 interface AuthResult {
@@ -36,14 +36,29 @@ export async function requireAdmin(request: NextRequest): Promise<AuthResult> {
 
 export function checkCsrf(request: NextRequest): boolean {
   const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
   const host = request.headers.get('host');
-  if (!origin || !host) return false;
-  try {
-    const originUrl = new URL(origin);
-    return originUrl.host === host;
-  } catch {
-    return false;
+
+  // If no origin/referer, allow (same-origin requests may not send origin)
+  if (!origin && !referer) return true;
+
+  // Check origin against host
+  if (origin && host) {
+    try {
+      const originUrl = new URL(origin);
+      if (originUrl.host === host) return true;
+    } catch {}
   }
+
+  // Fallback: check referer against host
+  if (referer && host) {
+    try {
+      const refererUrl = new URL(referer);
+      if (refererUrl.host === host) return true;
+    } catch {}
+  }
+
+  return false;
 }
 
 // Simple in-process rate limiter
