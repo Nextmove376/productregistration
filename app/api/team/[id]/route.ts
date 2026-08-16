@@ -1,50 +1,160 @@
-﻿import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
-import pool from "@/lib/db";
-import { requireAdmin } from "@/lib/api-auth";
+import { after, type NextRequest } from 'next/server';
+import pool from '@/lib/db';
+import { checkCsrf, requireAdmin, requireEditor } from '@/lib/api-auth';
+import { logAudit } from '@/lib/audit';
+import { revalidateTeam } from '@/lib/revalidate';
+import { sanitizePlainText } from '@/lib/sanitize';
+import { teamMemberSchema } from '@/lib/schemas';
+import { logger } from '@/lib/logger';
+import {
+  badRequest,
+  csrfFailed,
+  invalidJson,
+  notFound,
+  ok,
+  parseJsonBody,
+  serverError,
+  validationFailed,
+} from '@/lib/http';
 
-const teamUpdateSchema = z.object({
-  name: z.string().min(1).max(100),
-  role: z.string().min(1).max(100),
-  bio: z.string().max(2000).optional().default(""),
-  linkedin: z.string().url().optional().or(z.literal("")),
-  photo_url: z.string().max(500).optional().default(""),
-  phone: z.string().max(20).optional().default(""),
-  email: z.string().email().optional().or(z.literal("")),
-  whatsapp: z.string().max(20).optional().default(""),
-  sort_order: z.number().int().min(0).optional().default(0),
-  is_active: z.number().int().min(0).max(1).optional().default(1),
-});
+export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const [rows] = await pool.execute("SELECT * FROM team_members WHERE id = ?", [id]);
+function parseId(raw: string): number | null {
+  const id = Number.parseInt(raw, 10);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
+/**
+ * Single team member for the admin editor.
+ *
+ * Was an unauthenticated `SELECT *`, exposing phone/email/whatsapp for any id.
+ */
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error } = await requireEditor(request);
+  if (error) return error;
+
+  const id = parseId((await params).id);
+  if (!id) return badRequest('Invalid team member id');
+
+  const [rows] = await pool.execute(
+    `SELECT id, name, role, bio, linkedin, photo_url, phone, email, whatsapp,
+            sort_order, is_active, created_at, updated_at
+       FROM team_members
+      WHERE id = ? AND deleted_at IS NULL
+      LIMIT 1`,
+    [id]
+  );
   const member = (rows as any[])[0];
-  if (!member) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(member);
+  if (!member) return notFound('Team member not found');
+  return ok(member);
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireAdmin(request);
+  const { session, error } = await requireEditor(request);
   if (error) return error;
-  const { id } = await params;
-  const body = await request.json();
-  const validation = teamUpdateSchema.safeParse(body);
-  if (!validation.success) {
-    return NextResponse.json({ error: "Validation failed", details: validation.error.issues }, { status: 400 });
-  }
+
+  if (!checkCsrf(request)) return csrfFailed();
+
+  const id = parseId((await params).id);
+  if (!id) return badRequest('Invalid team member id');
+
+  const parsed = await parseJsonBody(request);
+  if (!parsed.ok) return invalidJson();
+
+  const validation = teamMemberSchema.safeParse(parsed.data);
+  if (!validation.success) return validationFailed(validation.error.issues);
+
   const d = validation.data;
-  await pool.execute(
-    "UPDATE team_members SET name=?, role=?, bio=?, linkedin=?, photo_url=?, phone=?, email=?, whatsapp=?, sort_order=?, is_active=? WHERE id=?",
-    [d.name, d.role, d.bio ?? "", d.linkedin ?? null, d.photo_url ?? "", d.phone ?? "", d.email ?? null, d.whatsapp ?? "", d.sort_order ?? 0, d.is_active ?? 1, id]
+
+  const [existingRows] = await pool.execute(
+    'SELECT id, name, role FROM team_members WHERE id = ? AND deleted_at IS NULL LIMIT 1',
+    [id]
   );
-  return NextResponse.json({ success: true });
+  const existing = (existingRows as any[])[0];
+  if (!existing) return notFound('Team member not found');
+
+  const name = sanitizePlainText(d.name);
+
+  try {
+    await pool.execute(
+      `UPDATE team_members SET
+          name=?, role=?, bio=?, linkedin=?, photo_url=?, phone=?, email=?, whatsapp=?,
+          sort_order=?, is_active=?
+        WHERE id=? AND deleted_at IS NULL`,
+      [
+        name,
+        sanitizePlainText(d.role),
+        sanitizePlainText(d.bio ?? ''),
+        d.linkedin || null,
+        d.photo_url ?? '',
+        d.phone ?? '',
+        d.email || null,
+        d.whatsapp ?? '',
+        d.sort_order ?? 0,
+        d.is_active ?? 1,
+        id,
+      ]
+    );
+
+    revalidateTeam();
+
+    after(() =>
+      logAudit({
+        action: 'update',
+        entity: 'team_member',
+        entityId: id,
+        actor: session,
+        before: { name: existing.name, role: existing.role },
+        after: { name, role: d.role },
+        request,
+      })
+    );
+
+    return ok({ success: true, id });
+  } catch (err) {
+    logger.error('team.update_failed', { err, id });
+    return serverError('Could not update the team member', err);
+  }
 }
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireAdmin(request);
+  const purge = new URL(request.url).searchParams.get('purge') === 'true';
+
+  const { session, error } = purge ? await requireAdmin(request) : await requireEditor(request);
   if (error) return error;
-  const { id } = await params;
-  await pool.execute("DELETE FROM team_members WHERE id = ?", [id]);
-  return NextResponse.json({ success: true });
+
+  if (!checkCsrf(request)) return csrfFailed();
+
+  const id = parseId((await params).id);
+  if (!id) return badRequest('Invalid team member id');
+
+  const [rows] = await pool.execute('SELECT id, name, role FROM team_members WHERE id = ? LIMIT 1', [id]);
+  const member = (rows as any[])[0];
+  if (!member) return notFound('Team member not found');
+
+  try {
+    if (purge) {
+      await pool.execute('DELETE FROM team_members WHERE id = ?', [id]);
+    } else {
+      await pool.execute('UPDATE team_members SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL', [id]);
+    }
+
+    revalidateTeam();
+
+    after(() =>
+      logAudit({
+        action: purge ? 'purge' : 'delete',
+        entity: 'team_member',
+        entityId: id,
+        actor: session,
+        before: { name: member.name, role: member.role },
+        request,
+      })
+    );
+
+    return ok({ success: true, id, purged: purge });
+  } catch (err) {
+    logger.error('team.delete_failed', { err, id, purge });
+    return serverError('Could not delete the team member', err);
+  }
 }

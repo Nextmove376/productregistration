@@ -1,40 +1,40 @@
 {
-    "name":  "nextmove-nextjs",
-    "version":  "0.1.0",
-    "private":  true,
-    "scripts":  {
-                    "dev":  "next dev",
-                    "build":  "next build",
-                    "start":  "next start",
-                    "lint":  "eslint",
-                    "db:migrate":  "npx tsx scripts/migrate.ts",
-                    "db:seed":  "npx tsx scripts/seed.ts",
-                    "db:admin":  "npx tsx scripts/create-admin.ts"
-                },
-    "dependencies":  {
-                         "bcryptjs":  "^3.0.2",
-                         "isomorphic-dompurify":  "^2.24.0",
-                         "jose":  "^6.0.11",
-                         "lucide-react":  "^1.26.0",
-                         "mysql2":  "^3.14.3",
-                         "next":  "16.2.11",
-                         "nodemailer":  "^7.0.5",
-                         "react":  "19.2.4",
-                         "react-dom":  "19.2.4",
-                         "sharp":  "^0.34.3",
-                         "zod":  "^3.25.67"
-                     },
-    "devDependencies":  {
-                            "@tailwindcss/postcss":  "^4",
-                            "@tailwindcss/typography":  "^0.5.16",
-                            "@types/node":  "^20",
-                            "@types/nodemailer":  "^6.4.17",
-                            "@types/react":  "^19",
-                            "@types/react-dom":  "^19",
-                            "eslint":  "^9",
-                            "eslint-config-next":  "16.2.11",
-                            "tailwindcss":  "^4",
-                            "tsx":  "^4.19.4",
-                            "typescript":  "^5"
-                        }
+    "name": "nextmove-nextjs",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "eslint",
+        "db:migrate": "npx tsx scripts/migrate.ts",
+        "db:seed": "npx tsx scripts/seed.ts",
+        "db:admin": "npx tsx scripts/create-admin.ts"
+    },
+    "dependencies": {
+        "bcryptjs": "^3.0.2",
+        "isomorphic-dompurify": "^2.24.0",
+        "jose": "^6.0.11",
+        "lucide-react": "^1.31.0",
+        "mysql2": "^3.14.3",
+        "next": "16.2.11",
+        "nodemailer": "^7.0.5",
+        "react": "19.2.4",
+        "react-dom": "19.2.4",
+        "sharp": "^0.34.3",
+        "zod": "^3.25.67"
+    },
+    "devDependencies": {
+        "@tailwindcss/postcss": "^4",
+        "@tailwindcss/typography": "^0.5.16",
+        "@types/node": "^20",
+        "@types/nodemailer": "^6.4.17",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "eslint": "^9",
+        "eslint-config-next": "16.2.11",
+        "tailwindcss": "^4",
+        "tsx": "^4.19.4",
+        "typescript": "^5"
+    }
 }

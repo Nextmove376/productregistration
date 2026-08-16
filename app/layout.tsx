@@ -1,7 +1,9 @@
 ﻿import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import WhatsAppWidget from "@/components/widgets/WhatsAppWidget";
 import PhoneWidget from "@/components/widgets/PhoneWidget";
+import PageviewTracker from "@/components/analytics/PageviewTracker";
 
 const title = "Product Registration in UAE | MOHAP & Dubai Municipality | NextMove";
 const description = "End-to-end product registration in Dubai and UAE business setup: MOHAP approvals, Dubai Municipality & ESMA registration, freezone formation and PRO services. 98% success rate.";
@@ -104,6 +106,14 @@ export default function RootLayout({
         {children}
         <WhatsAppWidget />
         <PhoneWidget />
+        {/*
+          Suspense is required: PageviewTracker reads useSearchParams(), which is a
+          request-time API. Without a boundary here it would opt every statically
+          prerendered public page out of static rendering (or fail the build).
+        */}
+        <Suspense fallback={null}>
+          <PageviewTracker />
+        </Suspense>
       </body>
     </html>
   );

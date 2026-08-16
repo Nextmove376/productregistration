@@ -1,6 +1,12 @@
 ﻿import type { MetadataRoute } from 'next';
 import pool from '@/lib/db';
 
+/**
+ * ISR floor, so newly published posts and services appear in the sitemap without
+ * a redeploy. `revalidateBlog()`/`revalidateServices()` also invalidate this path.
+ */
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = 'https://productregistrationinuae.com';
   
@@ -17,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let blogPages: MetadataRoute.Sitemap = [];
   
   try {
-    const [services] = await pool.execute('SELECT slug, updated_at FROM services WHERE is_active = 1');
+    const [services] = await pool.execute('SELECT slug, updated_at FROM services WHERE is_active = 1 AND deleted_at IS NULL');
     servicePages = (services as any[]).map((s) => ({
       url: `${base}/services/${s.slug}`,
       lastModified: new Date(s.updated_at),
@@ -25,7 +31,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
     
-    const [posts] = await pool.execute("SELECT slug, updated_at FROM posts WHERE status = 'published'");
+    const [posts] = await pool.execute(`SELECT slug, updated_at FROM posts
+        WHERE status = 'published'
+          AND (published_at IS NULL OR published_at <= NOW())
+          AND deleted_at IS NULL`);
     blogPages = (posts as any[]).map((p) => ({
       url: `${base}/blog/${p.slug}`,
       lastModified: new Date(p.updated_at),
