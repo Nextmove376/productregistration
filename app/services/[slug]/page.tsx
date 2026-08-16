@@ -24,9 +24,24 @@ async function getService(slug: string) {
   return (rows as any[])[0] || null;
 }
 
+/**
+ * Runs at build time.
+ *
+ * A database error here fails the whole build, which is how a pending migration
+ * (missing `deleted_at`) took the deploy down. Returning an empty list instead
+ * lets the build finish; the pages are then rendered on first request and cached
+ * by the ISR setting above, so nothing is permanently lost.
+ */
 export async function generateStaticParams() {
-  const [rows] = await pool.execute('SELECT slug FROM services WHERE is_active = 1 AND deleted_at IS NULL');
-  return (rows as any[]).map((r) => ({ slug: r.slug }));
+  try {
+    const [rows] = await pool.execute(
+      'SELECT slug FROM services WHERE is_active = 1 AND deleted_at IS NULL'
+    );
+    return (rows as any[]).map((r) => ({ slug: r.slug }));
+  } catch (err) {
+    console.error('generateStaticParams(services) failed; falling back to on-demand rendering:', err);
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: ServicePageProps): Promise<Metadata> {
