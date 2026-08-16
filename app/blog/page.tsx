@@ -3,9 +3,21 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import pool from '@/lib/db';
 
+/**
+ * ISR floor — see the note in `app/blog/[slug]/page.tsx`. Admin mutations call
+ * `revalidateBlog()` for immediate invalidation; this is the backstop.
+ */
+export const revalidate = 300;
+
 async function getPosts() {
   const [rows] = await pool.execute(
-    "SELECT id, slug, title, excerpt, featured_image, published_at, reading_minutes FROM posts WHERE status = 'published' ORDER BY published_at DESC LIMIT 20"
+    `SELECT id, slug, title, excerpt, featured_image, image_alt, published_at, reading_minutes
+       FROM posts
+      WHERE status = 'published'
+        AND (published_at IS NULL OR published_at <= NOW())
+        AND deleted_at IS NULL
+      ORDER BY published_at DESC
+      LIMIT 20`
   );
   return rows as any[];
 }
@@ -44,7 +56,7 @@ export default async function BlogPage() {
               >
                 {post.featured_image && (
                   <div className="aspect-[16/10] overflow-hidden bg-[var(--sand)]">
-                    <img src={post.featured_image} alt={post.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                    <img src={post.featured_image} alt={post.image_alt || post.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
                   </div>
                 )}
                 <div className="p-6">

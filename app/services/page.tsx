@@ -5,6 +5,12 @@ import Footer from '@/components/layout/Footer';
 import pool from '@/lib/db';
 import type { Metadata } from 'next';
 
+/**
+ * ISR floor — see `lib/revalidate.ts`. Admin mutations call `revalidateServices()`
+ * for immediate invalidation; this interval is the backstop.
+ */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Our Services | Product Registration, Business Setup & More | NextMove",
   description: "Comprehensive regulatory services in Dubai & UAE. Product registration, MOHAP registration, business setup, MOFA attestation, and regulatory approvals. Free consultation.",
@@ -31,7 +37,10 @@ const fallbackServices = [
 async function getServices() {
   try {
     const [rows] = await pool.execute(
-      'SELECT slug, title, tag, summary, icon FROM services WHERE is_active = 1 ORDER BY sort_order'
+      `SELECT slug, title, tag, summary, icon
+         FROM services
+        WHERE is_active = 1 AND deleted_at IS NULL
+        ORDER BY sort_order, title`
     );
     const services = rows as any[];
     return services.length > 0 ? services : fallbackServices;

@@ -3,9 +3,19 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import pool from '@/lib/db';
 
+/**
+ * ISR floor. Without a revalidate value this page was prerendered once at build
+ * time and never refreshed, so CMS edits never reached the live site. Admin
+ * mutations also call `revalidateTeam()` in `lib/revalidate.ts`.
+ */
+export const revalidate = 300;
+
 async function getTeamMembers() {
   const [rows] = await pool.execute(
-    'SELECT name, role, bio, linkedin, photo_url, phone, email, whatsapp FROM team_members WHERE is_active = 1 ORDER BY sort_order'
+    `SELECT name, role, bio, linkedin, photo_url, phone, email, whatsapp
+       FROM team_members
+      WHERE is_active = 1 AND deleted_at IS NULL
+      ORDER BY sort_order, name`
   );
   return rows as any[];
 }

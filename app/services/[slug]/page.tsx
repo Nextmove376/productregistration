@@ -5,20 +5,27 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import pool from '@/lib/db';
 
+/**
+ * ISR floor. `generateStaticParams` below prerenders the known slugs at build
+ * time; this makes those pages refresh afterwards instead of being frozen until
+ * the next deploy. Admin mutations also call `revalidateServices()`.
+ */
+export const revalidate = 300;
+
 interface ServicePageProps {
   params: Promise<{ slug: string }>;
 }
 
 async function getService(slug: string) {
   const [rows] = await pool.execute(
-    'SELECT * FROM services WHERE slug = ? AND is_active = 1',
+    'SELECT * FROM services WHERE slug = ? AND is_active = 1 AND deleted_at IS NULL LIMIT 1',
     [slug]
   );
   return (rows as any[])[0] || null;
 }
 
 export async function generateStaticParams() {
-  const [rows] = await pool.execute('SELECT slug FROM services WHERE is_active = 1');
+  const [rows] = await pool.execute('SELECT slug FROM services WHERE is_active = 1 AND deleted_at IS NULL');
   return (rows as any[]).map((r) => ({ slug: r.slug }));
 }
 
