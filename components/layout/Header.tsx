@@ -1,15 +1,21 @@
-import { getServiceNav, getTeamNav } from '@/lib/nav';
+'use client';
+
 import HeaderNav from '@/components/layout/HeaderNav';
+import { useNav } from '@/components/layout/NavProvider';
 
 /**
- * Server wrapper that supplies the header's dropdown contents.
+ * Site header.
  *
- * Kept at the same path and with the same empty-props signature as the old client
- * component, so all nine `<Header />` call sites are unchanged. The queries run on the
- * server inside each page's own ISR window rather than as a client fetch, so the menu is
- * in the first paint with no flash of a shorter nav.
+ * Deliberately a client component with no props and no data access of its own. It is
+ * imported by ten call sites, one of which (`app/contact/page.tsx`) is itself a client
+ * component — so anything server-only reachable from here ends up in the browser bundle.
+ * That is exactly what failed the build when this file imported `lib/nav` directly:
+ * `mysql2` needs `net`/`tls`.
+ *
+ * The nav contents are read once in `app/layout.tsx` and published through
+ * `NavProvider`, which keeps the signature empty and every call site untouched.
  */
-export default async function Header() {
-  const [services, team] = await Promise.all([getServiceNav(), getTeamNav()]);
+export default function Header() {
+  const { services, team } = useNav();
   return <HeaderNav services={services} team={team} />;
 }

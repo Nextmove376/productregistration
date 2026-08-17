@@ -2,6 +2,7 @@ import type { Pool, PoolConnection } from 'mysql2/promise';
 import pool from './db';
 import { clearSchemaCache } from './schema';
 import {
+  BACKFILL_SPEC,
   BASE_TABLES,
   COLUMN_SPEC,
   INDEX_SPEC,
@@ -236,8 +237,32 @@ export async function repair(db: Runner = pool): Promise<RepairReport> {
     }
   }
 
-  // 3. Types that must match what the app writes (short ENUMs, narrow VARCHARs).
   const refreshed = await existingColumns(db);
+
+  // 3. Rescue values that live under an older column name.
+  //
+  // The live `settings` table predates this codebase and had no `key` column at all —
+  // indexing it failed with errno 1072, and every `SELECT \`key\`, \`value\` FROM settings`
+  // had been failing silently and falling back to the in-process default cache. Step 2
+  // just created the modern columns, so anything the old schema stored is still sitting
+  // in its original column; copy it across rather than stranding it.
+  //
+  // Only one candidate per target can match, since the rest do not exist. Rows whose
+  // target already has a value are left alone, so this is safe to re-run.
+  for (const [table, target, sources] of BACKFILL_SPEC) {
+    const present = refreshed.get(table);
+    if (!present?.has(target.toLowerCase())) continue;
+    for (const source of sources) {
+      if (!present.has(source.toLowerCase())) continue;
+      await run(
+        `${table}.${target} <- ${source}`,
+        `UPDATE \`${table}\` SET \`${target}\` = \`${source}\`
+          WHERE (\`${target}\` IS NULL OR \`${target}\` = '') AND \`${source}\` IS NOT NULL`
+      );
+    }
+  }
+
+  // 4. Types that must match what the app writes (short ENUMs, narrow VARCHARs).
   for (const [table, column, definition] of MODIFY_SPEC) {
     if (!refreshed.get(table)?.has(column.toLowerCase())) continue;
     await run(
@@ -246,7 +271,7 @@ export async function repair(db: Runner = pool): Promise<RepairReport> {
     );
   }
 
-  // 4. Indexes, then unique keys (which are the ones allowed to fail).
+  // 5. Indexes, then unique keys (which are the ones allowed to fail).
   const indexes = await existingIndexes(db);
   for (const [table, name, cols] of INDEX_SPEC) {
     if (!tables.has(table) || indexes.has(`${table}.${name.toLowerCase()}`)) continue;
@@ -259,7 +284,7 @@ export async function repair(db: Runner = pool): Promise<RepairReport> {
     await run(`unique ${table}.${name}`, `ALTER TABLE \`${table}\` ADD UNIQUE INDEX \`${name}\` (${cols})`);
   }
 
-  // 5. Anyone created before `is_active` existed must still be able to log in.
+  // 6. Anyone created before `is_active` existed must still be able to log in.
   if (refreshed.get('admin_users')?.has('is_active')) {
     await run('admin_users.is_active backfill', 'UPDATE admin_users SET is_active = 1 WHERE is_active IS NULL');
   }

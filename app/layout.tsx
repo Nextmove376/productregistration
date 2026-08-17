@@ -4,6 +4,8 @@ import "./globals.css";
 import WhatsAppWidget from "@/components/widgets/WhatsAppWidget";
 import PhoneWidget from "@/components/widgets/PhoneWidget";
 import PageviewTracker from "@/components/analytics/PageviewTracker";
+import { NavProvider } from "@/components/layout/NavProvider";
+import { getServiceNav, getTeamNav } from "@/lib/nav";
 
 const title = "Product Registration in UAE | MOHAP & Dubai Municipality | NextMove";
 const description = "End-to-end product registration in Dubai and UAE business setup: MOHAP approvals, Dubai Municipality & ESMA registration, freezone formation and PRO services. 98% success rate.";
@@ -41,11 +43,22 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+/**
+ * Async because the header's Services and Team dropdowns are database-driven and this is
+ * the one ancestor every page shares. Reading them here — rather than in `<Header />` —
+ * keeps `<Header />` free of any server-only import, which matters because
+ * `app/contact/page.tsx` is a client component that renders it.
+ *
+ * Both getters swallow their own errors and fall back to the service pages that ship in
+ * code, so a database problem can never take down the layout that wraps the whole site.
+ */
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [services, team] = await Promise.all([getServiceNav(), getTeamNav()]);
+
   // Global Organization Schema
   const organizationSchema = {
     "@context": "https://schema.org",
@@ -113,7 +126,7 @@ export default function RootLayout({
         </noscript>
       </head>
       <body className="min-h-full flex flex-col">
-        {children}
+        <NavProvider value={{ services, team }}>{children}</NavProvider>
         <WhatsAppWidget />
         <PhoneWidget />
         {/*

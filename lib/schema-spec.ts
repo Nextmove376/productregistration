@@ -482,3 +482,21 @@ export const UNIQUE_SPEC: [table: string, name: string, columns: string][] = [
 
 /** Tables that carry `deleted_at`, i.e. participate in soft delete. */
 export const SOFT_DELETE_TABLES = ['posts', 'services', 'team_members', 'media', 'submissions'] as const;
+
+/**
+ * Values to move out of a legacy column and into the one the code reads.
+ *
+ * `#1072 - Key column 'key' doesn't exist in table` proved the live `settings` table has
+ * no `key` column, so it was created by something older than this project and stores its
+ * keys under a different name. Adding `key` fixes the errors, but the rows would then be
+ * unreadable — the existing values need to come across too.
+ *
+ * Listed as `[table, target, candidateSources]`. Only one source per target can exist on
+ * any given database; the rest are skipped. Rows whose target already holds a value are
+ * never touched, so a repair can be re-run without overwriting later edits, and no
+ * legacy column is ever dropped — the old data stays where it was as a safety net.
+ */
+export const BACKFILL_SPEC: [table: string, target: string, sources: string[]][] = [
+  ['settings', 'key', ['setting_key', 'option_name', 'meta_key', 'name', 'skey']],
+  ['settings', 'value', ['setting_value', 'option_value', 'meta_value', 'val']],
+];
