@@ -84,6 +84,33 @@ export function serverError(error = 'Internal server error', details?: unknown) 
   );
 }
 
+/**
+ * A driver error reduced to the two things that identify it: the message MySQL wrote
+ * and its code. No stack, no SQL, no parameter values.
+ */
+export function dbHint(err: unknown): string {
+  const e = err as { code?: string; errno?: number; sqlMessage?: string; message?: string };
+  const message = e?.sqlMessage || e?.message;
+  if (!message) return 'unknown database error';
+  return e?.code ? `${message} [${e.code}]` : message;
+}
+
+/**
+ * `serverError` for authenticated admin routes, with the cause in the message.
+ *
+ * "Could not load services" told nobody anything — the real cause was
+ * `Unknown column 'og_image' in 'field list'` and it took a database inspection to
+ * find out. These routes are behind an admin session, so naming the failure in the
+ * response is the difference between a self-diagnosing panel and another round trip.
+ * Public routes keep using `serverError`, which stays opaque.
+ */
+export function adminServerError(error: string, err: unknown) {
+  return json(
+    { error: `${error} — ${dbHint(err)}`, code: 'SERVER_ERROR' } satisfies ApiErrorBody,
+    500
+  );
+}
+
 /** Safely parse a JSON body; returns a discriminated result instead of throwing. */
 export async function parseJsonBody(request: Request): Promise<{ ok: true; data: unknown } | { ok: false }> {
   try {

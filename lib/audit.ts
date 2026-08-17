@@ -26,7 +26,10 @@ export type AuditAction =
   | 'user.create'
   | 'user.update'
   | 'user.deactivate'
-  | 'password.change';
+  | 'password.change'
+  // Database maintenance run from the admin diagnostics screen.
+  | 'schema.repair'
+  | 'services.seed';
 
 export type AuditEntity =
   | 'post'
@@ -38,7 +41,8 @@ export type AuditEntity =
   | 'category'
   | 'menu'
   | 'user'
-  | 'session';
+  | 'session'
+  | 'schema';
 
 export interface AuditInput {
   action: AuditAction;

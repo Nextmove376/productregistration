@@ -16,6 +16,7 @@ import {
   MoreHorizontal,
   X,
   ShieldCheck,
+  Stethoscope,
   Loader2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -48,6 +49,8 @@ const NAV_ITEMS: NavItem[] = [
   { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
   { icon: ShieldCheck, label: 'Users', href: '/admin/users', roles: ['admin'] },
   { icon: Settings, label: 'Settings', href: '/admin/settings', roles: ['admin'] },
+  // Admin-only: reports schema drift and runs the guarded repair.
+  { icon: Stethoscope, label: 'Diagnostics', href: '/admin/diagnostics', roles: ['admin'] },
 ];
 
 const COLLAPSE_KEY = 'nm_admin_sidebar_collapsed';

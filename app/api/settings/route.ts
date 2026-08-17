@@ -12,8 +12,11 @@ import {
   invalidateSettingsCache,
   toColumnType,
 } from '@/lib/settings';
+import { presentColumns } from '@/lib/schema';
+import { withSchemaHeal } from '@/lib/schema-repair';
 import { logger } from '@/lib/logger';
 import {
+  adminServerError,
   badRequest,
   csrfFailed,
   invalidJson,
@@ -122,30 +125,8 @@ export async function PUT(request: NextRequest) {
   const entries = Object.entries(validation.data);
   if (entries.length === 0) return badRequest('No settings provided');
 
-  const conn = await pool.getConnection();
   try {
-    await conn.beginTransaction();
-
-    const applied: Record<string, string> = {};
-
-    for (const [key, rawValue] of entries) {
-      const def = SETTING_DEF_BY_KEY.get(key);
-      if (!def) continue; // unreachable — validation rejects unknown keys
-
-      let value = rawValue === null ? '' : String(rawValue);
-      // Free-text fields must not carry markup into the public header/footer.
-      if (def.type === 'text' || def.type === 'textarea') {
-        value = sanitizePlainText(value);
-      }
-
-      await conn.execute(
-        'INSERT INTO settings (`key`, value, type) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), type = VALUES(type)',
-        [key, value, toColumnType(def.type)]
-      );
-      applied[key] = value;
-    }
-
-    await conn.commit();
+    const applied = await withSchemaHeal(() => writeSettings(entries));
 
     invalidateSettingsCache();
     // The in-process cache is not the whole story: public pages are ISR-rendered,
@@ -165,9 +146,77 @@ export async function PUT(request: NextRequest) {
 
     return ok({ success: true, updated: Object.keys(applied) });
   } catch (err) {
-    await conn.rollback();
     logger.error('settings.update_failed', { err });
-    return serverError('Could not save settings', err);
+    return adminServerError('Could not save settings', err);
+  }
+}
+
+/**
+ * Writes the validated settings inside one transaction.
+ *
+ * This is where "Could not save settings" came from, and there were two separate
+ * causes — both consequences of the live table being older than the code:
+ *
+ *  1. `settings.type` may not exist, or may be an ENUM that predates the `image` and
+ *     `bool` members. Writing a value the ENUM does not list is errno 1265, not a
+ *     warning, inside a transaction. The column list is therefore built from what the
+ *     table actually has, and `withSchemaHeal` widens the ENUM on the first failure.
+ *  2. The original statement was `INSERT … ON DUPLICATE KEY UPDATE`, which needs a
+ *     unique key on `key` to do anything useful. Without one it appends a second row
+ *     for every save, so the reader keeps returning whichever row it happens to find.
+ *     Existing keys are now read once up front and updated in place.
+ *
+ * Kept as its own function so a heal-and-retry gets a fresh connection: DDL commits
+ * implicitly in MySQL and must never run inside the transaction below.
+ */
+async function writeSettings(entries: [string, unknown][]): Promise<Record<string, string>> {
+  const columns = await presentColumns('settings', ['key', 'value', 'type']);
+  const hasType = columns.includes('type');
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [existingRows] = await conn.query('SELECT `key` FROM settings');
+    const existing = new Set((existingRows as { key: string }[]).map((r) => r.key));
+
+    const applied: Record<string, string> = {};
+
+    for (const [key, rawValue] of entries) {
+      const def = SETTING_DEF_BY_KEY.get(key);
+      if (!def) continue; // unreachable — validation rejects unknown keys
+
+      let value = rawValue === null ? '' : String(rawValue);
+      // Free-text fields must not carry markup into the public header/footer.
+      if (def.type === 'text' || def.type === 'textarea') {
+        value = sanitizePlainText(value);
+      }
+
+      if (existing.has(key)) {
+        await conn.execute(
+          hasType
+            ? 'UPDATE settings SET value = ?, type = ? WHERE `key` = ?'
+            : 'UPDATE settings SET value = ? WHERE `key` = ?',
+          hasType ? [value, toColumnType(def.type), key] : [value, key]
+        );
+      } else {
+        await conn.execute(
+          hasType
+            ? 'INSERT INTO settings (`key`, value, type) VALUES (?, ?, ?)'
+            : 'INSERT INTO settings (`key`, value) VALUES (?, ?)',
+          hasType ? [key, value, toColumnType(def.type)] : [key, value]
+        );
+        existing.add(key);
+      }
+
+      applied[key] = value;
+    }
+
+    await conn.commit();
+    return applied;
+  } catch (err) {
+    await conn.rollback().catch(() => undefined);
+    throw err;
   } finally {
     conn.release();
   }

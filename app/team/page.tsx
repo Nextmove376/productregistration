@@ -2,6 +2,9 @@ import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import pool from '@/lib/db';
+import { hasColumn, selectList, softDeleteFilter } from '@/lib/schema';
+import { withSchemaHeal } from '@/lib/schema-repair';
+import { logger } from '@/lib/logger';
 
 /**
  * ISR floor. Without a revalidate value this page was prerendered once at build
@@ -10,14 +13,35 @@ import pool from '@/lib/db';
  */
 export const revalidate = 300;
 
+/**
+ * Reads whichever of these columns the live table has.
+ *
+ * The hard-coded list previously named `whatsapp` and `deleted_at`, both added long
+ * after the production database was created. On a database missing either, this query
+ * threw and took the whole public page down with it — a public page must degrade, not
+ * 500, when a contact field is absent.
+ */
 async function getTeamMembers() {
-  const [rows] = await pool.execute(
-    `SELECT name, role, bio, linkedin, photo_url, phone, email, whatsapp
-       FROM team_members
-      WHERE is_active = 1 AND deleted_at IS NULL
-      ORDER BY sort_order, name`
-  );
-  return rows as any[];
+  try {
+    return await withSchemaHeal(async () => {
+      const columns = await selectList('team_members', [
+        'id', 'name', 'role', 'bio', 'linkedin', 'photo_url', 'phone', 'email', 'whatsapp',
+      ]);
+      const notDeleted = await softDeleteFilter('team_members');
+      const activeOnly = (await hasColumn('team_members', 'is_active')) ? ' AND is_active = 1' : '';
+      const order = (await hasColumn('team_members', 'sort_order')) ? 'ORDER BY sort_order, name' : 'ORDER BY name';
+
+      const [rows] = await pool.query(
+        `SELECT ${columns} FROM team_members
+          WHERE 1=1${activeOnly}${notDeleted}
+          ${order}`
+      );
+      return rows as any[];
+    });
+  } catch (err) {
+    logger.error('team.page_query_failed', { err });
+    return [] as any[];
+  }
 }
 
 export default async function TeamPage() {
@@ -42,7 +66,7 @@ export default async function TeamPage() {
       <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {members.map((member) => (
-            <div key={member.name} className="group rounded-3xl border border-border bg-[var(--cream)] p-8 transition-all hover:border-[var(--teal)]/40 hover:shadow-lg">
+            <div key={member.name} id={`member-${member.id}`} className="group scroll-mt-28 rounded-3xl border border-border bg-[var(--cream)] p-8 transition-all hover:border-[var(--teal)]/40 hover:shadow-lg">
               {member.photo_url && (
                 <img src={member.photo_url} alt={member.name} className="mb-6 h-24 w-24 rounded-2xl object-cover" />
               )}
