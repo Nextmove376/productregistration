@@ -22,20 +22,44 @@ import type { NextRequest } from 'next/server';
 
 const SESSION_COOKIE = 'nm_session';
 
-/** Paths under /admin that must stay reachable without a session. */
-const PUBLIC_ADMIN_PATHS = ['/admin/login'];
+/** Page paths under /admin that must stay reachable without a session. */
+const PUBLIC_ADMIN_PAGES = ['/admin/login'];
+
+/**
+ * API paths that must never be gated, and must never be redirected.
+ *
+ * `/api/admin/login` is the critical one: it matches the `/api/admin/:path*`
+ * matcher below, and by definition there is no session cookie yet when it is
+ * called — so gating it returned a 401 before the handler ever ran and made
+ * signing in impossible. `/api/admin/logout` is here so a stale or malformed
+ * cookie can always be cleared.
+ *
+ * These are checked before `hasSession` on purpose. Sending a redirect for an
+ * API path would turn the login POST into a GET of the dashboard, which fails
+ * just as silently as the 401 did.
+ */
+const PUBLIC_ADMIN_APIS = ['/api/admin/login', '/api/admin/logout'];
 
 export function proxy(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
+  const { pathname, search, searchParams } = request.nextUrl;
+
+  if (PUBLIC_ADMIN_APIS.includes(pathname)) return NextResponse.next();
+
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
 
-  const isPublicAdminPath = PUBLIC_ADMIN_PATHS.some(
+  const isPublicAdminPage = PUBLIC_ADMIN_PAGES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   );
 
-  // Already signed in and heading for the login page — send them inward.
-  if (isPublicAdminPath) {
-    if (hasSession) {
+  if (isPublicAdminPage) {
+    // Already signed in and heading for the login page — send them inward.
+    //
+    // Skipped when `?next=` is present. That parameter means `requireSession()`
+    // just rejected this cookie and bounced the user here, so the cookie exists
+    // but is invalid (expired, wrong session_version, deactivated user). Without
+    // this guard the optimistic redirect would send them back to the page that
+    // rejected them, and the two would bounce forever.
+    if (hasSession && !searchParams.has('next')) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
     return NextResponse.next();
