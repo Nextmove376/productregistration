@@ -3,6 +3,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import Reveal from '@/components/Reveal';
+import ServiceHero from '@/components/services/ServiceHero';
+import OurServices from '@/components/services/OurServices';
+import { parseServiceBody } from '@/lib/service-content';
 import pool from '@/lib/db';
 
 /**
@@ -60,51 +64,54 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
   };
 }
 
-export default async function ServicePage({ params }: ServicePageProps) {
+export default async function ServicePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const service = await getService(slug);
   if (!service) notFound();
 
-  const body = service.body ? (typeof service.body === 'string' ? JSON.parse(service.body) : service.body) : null;
+  // Normalised and fully defaulted \u2014 no optional chaining needed downstream, and
+  // a row saved before the hero/ourServices model existed still renders.
+  const body = parseServiceBody(service.body);
+
+  const crumbs = [
+    { label: 'Home', href: '/' },
+    { label: 'Services', href: '/services' },
+    { label: body.breadcrumbLabel || service.title },
+  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
 
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, var(--teal), transparent 40%)' }} />
-        <div className="relative mx-auto max-w-7xl px-6 pb-24 pt-24 md:pt-32">
-          {service.tag && (
-            <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> {service.tag}
-            </div>
-          )}
-          <h1 className="text-5xl leading-[1.02] tracking-tight md:text-[5.5rem]">
-            {service.title.split(' ').map((word: string, i: number) => (
-              i === service.title.split(' ').length - 1
-                ? <span key={i} className="italic text-[var(--teal)]/90">{word}</span>
-                : <span key={i}>{word} </span>
-            ))}
-          </h1>
-          {service.summary && (
-            <p className="mt-8 max-w-xl text-base leading-relaxed text-[var(--cream)]/70">{service.summary}</p>
-          )}
-        </div>
-      </section>
+      <ServiceHero
+        hero={body.hero}
+        crumbs={crumbs}
+        fallbackEyebrow={service.tag || undefined}
+        fallbackHeadline={service.title}
+        fallbackSubheadline={service.summary || undefined}
+      />
 
-      {body?.sections && (
+      <OurServices content={body.ourServices} />
+
+      {body.sections.length > 0 && (
         <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="grid gap-12 md:grid-cols-12">
             <div className="md:col-span-5">
-              <h2 className="font-serif text-4xl leading-tight">What&apos;s included</h2>
+              <Reveal from="left">
+                <h2 className="font-serif text-4xl leading-tight">What&apos;s included</h2>
+              </Reveal>
             </div>
             <div className="md:col-span-7">
               <ul className="grid gap-4 sm:grid-cols-2">
-                {body.sections.map((item: string, i: number) => (
-                  <li key={i} className="flex items-start gap-3 rounded-2xl border border-border bg-[var(--cream)] p-5 text-sm">
-                    <span className="mt-0.5 text-[var(--teal)]">{'\u2666'}</span>
-                    <span>{item}</span>
-                  </li>
+                {body.sections.map((item, i) => (
+                  <Reveal key={i} as="li" delay={i * 50}>
+                    <div className="flex h-full items-start gap-3 rounded-2xl border border-border bg-[var(--cream)] p-5 text-sm transition-colors hover:border-[var(--teal)]/40">
+                      <span className="mt-0.5 text-[var(--teal)]" aria-hidden="true">
+                        {'\u2666'}
+                      </span>
+                      <span>{item}</span>
+                    </div>
+                  </Reveal>
                 ))}
               </ul>
             </div>
@@ -112,16 +119,28 @@ export default async function ServicePage({ params }: ServicePageProps) {
         </section>
       )}
 
-      {body?.faq && body.faq.length > 0 && (
+      {body.faq.length > 0 && (
         <section className="border-t border-border bg-[var(--cream)]">
           <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-            <h2 className="font-serif text-4xl leading-tight">Frequently Asked Questions</h2>
-            <div className="mt-12 space-y-6">
-              {body.faq.map((item: { q: string; a: string }, i: number) => (
-                <details key={i} className="group rounded-2xl border border-border bg-white p-6">
-                  <summary className="cursor-pointer font-serif text-lg font-medium">{item.q}</summary>
-                  <p className="mt-4 text-muted-foreground leading-relaxed">{item.a}</p>
-                </details>
+            <Reveal>
+              <h2 className="font-serif text-4xl leading-tight">Frequently Asked Questions</h2>
+            </Reveal>
+            <div className="mt-12 space-y-4">
+              {body.faq.map((item, i) => (
+                <Reveal key={i} delay={i * 50}>
+                  <details className="group rounded-2xl border border-border bg-white p-6 transition-colors hover:border-[var(--teal)]/40">
+                    <summary className="flex cursor-pointer items-center justify-between gap-4 font-serif text-lg font-medium">
+                      {item.q}
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-[var(--teal-deep)] transition-transform group-open:rotate-45"
+                      >
+                        +
+                      </span>
+                    </summary>
+                    <p className="mt-4 leading-relaxed text-muted-foreground">{item.a}</p>
+                  </details>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -130,19 +149,25 @@ export default async function ServicePage({ params }: ServicePageProps) {
 
       <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
         <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
-          <div className="grid gap-12 md:grid-cols-12 md:items-end">
-            <div className="md:col-span-8">
-              <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
-                Ready to start?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
-              </h2>
+          <Reveal>
+            <div className="grid gap-12 md:grid-cols-12 md:items-end">
+              <div className="md:col-span-8">
+                <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
+                  Ready to start?<br />
+                  <em className="text-[var(--teal)]">Let&apos;s talk.</em>
+                </h2>
+              </div>
+              <div className="md:col-span-4">
+                <Link
+                  href="/contact"
+                  className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]"
+                >
+                  <span className="font-serif text-lg">Book a free consultation</span>
+                  <span className="text-2xl transition-transform group-hover:translate-x-1">{'\u2192'}</span>
+                </Link>
+              </div>
             </div>
-            <div className="md:col-span-4">
-              <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
-                <span className="font-serif text-lg">Book a free consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">{'\u2192'}</span>
-              </Link>
-            </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 

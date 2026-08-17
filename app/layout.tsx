@@ -101,6 +101,16 @@ export default function RootLayout({
             __html: JSON.stringify(organizationSchema),
           }}
         />
+        {/*
+          Scroll-reveal fallback. `components/Reveal.tsx` renders its children at
+          `opacity: 0` and animates them in once IntersectionObserver fires, so
+          without JavaScript those sections would stay invisible even though the
+          content is present in the HTML. This unhides them for no-JS readers —
+          `!important` is required because Reveal sets inline styles.
+        */}
+        <noscript>
+          <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
+        </noscript>
       </head>
       <body className="min-h-full flex flex-col">
         {children}

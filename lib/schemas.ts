@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { serviceBodySchema } from './service-content';
 
 /**
  * Shared zod schemas.
@@ -37,7 +38,12 @@ export const serviceSchema = z.object({
   slug: slugField,
   tag: z.string().max(50).optional().default(''),
   summary: z.string().max(500).optional().default(''),
-  body: z.any().optional().nullable(),
+  /**
+   * Was `z.any()` — it accepted arbitrarily large, arbitrarily shaped JSON
+   * straight into the column. `serviceBodySchema` bounds every string and array
+   * and strips unknown keys, and is the same schema the public page renders from.
+   */
+  body: serviceBodySchema.optional().nullable(),
   icon: z.string().max(100).optional().default(''),
   hero_image: imageRef.optional().default(''),
   sort_order: z.coerce.number().int().min(0).max(9999).optional().default(0),

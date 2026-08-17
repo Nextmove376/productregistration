@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, Save, AlertCircle, ImagePlus, X, Loader2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/client-api';
 import MediaPicker from '@/components/admin/MediaPicker';
+import ServiceContentEditor from '@/components/admin/ServiceContentEditor';
+import { EMPTY_SERVICE_BODY, type ServiceBody } from '@/lib/service-content';
 import {
   CheckboxField,
   Field,
@@ -28,6 +30,8 @@ export interface ServiceFormValues {
   is_active: number;
   meta_title: string;
   meta_description: string;
+  /** Page content: hero media, "Our Services", included list, FAQ. */
+  body: ServiceBody;
 }
 
 const EMPTY: ServiceFormValues = {
@@ -42,6 +46,7 @@ const EMPTY: ServiceFormValues = {
   is_active: 1,
   meta_title: '',
   meta_description: '',
+  body: EMPTY_SERVICE_BODY,
 };
 
 /** Lucide names used by the public service cards. */
@@ -269,10 +274,16 @@ export default function ServiceForm({
           </Field>
         </div>
 
+        {/*
+          Page content. Everything in here is stored in the `services.body` JSON
+          column, so hero media, the "Our Services" cards, the included list and
+          the FAQ are all editable without a schema change.
+        */}
+        <ServiceContentEditor value={form.body} onChange={(body) => set('body', body)} />
+
         {/* meta_title / meta_description were in state with no inputs either. */}
         <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6">
-          <h2 className="text-sm font-semibold text-gray-900">SEO</h2>
-          <TextField
+          <h2 className="text-sm font-semibold text-gray-900">SEO</h2>          <TextField
             id="meta_title"
             label="Meta title"
             type="text"
