@@ -1,15 +1,18 @@
 ﻿import Link from 'next/link';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import Breadcrumb from '@/components/services/Breadcrumb';
+import Reveal from '@/components/Reveal';
+import ServiceHero from '@/components/services/ServiceHero';
+import LogoTicker from '@/components/services/LogoTicker';
+import OurServices from '@/components/services/OurServices';
 import ProcessSteps from '@/components/services/ProcessSteps';
-import ServiceGrid from '@/components/services/ServiceGrid';
 import DocumentChecklist from '@/components/services/DocumentChecklist';
 import PricingTable from '@/components/services/PricingTable';
-import WhyChooseUs from '@/components/services/WhyChooseUs';
 import FAQAccordion from '@/components/services/FAQAccordion';
 import RelatedServices from '@/components/services/RelatedServices';
 import StickyMobileCTA from '@/components/services/StickyMobileCTA';
+import pool from '@/lib/db';
+import { EMPTY_SERVICE_BODY, parseServiceBody, type ServiceBody } from '@/lib/service-content';
 
 export interface ProcessStep {
   step: number;
@@ -64,9 +67,71 @@ export interface ServicePageData {
   targetCountries?: string[];
 }
 
-export default function ServicePageLayout({ data }: { data: ServicePageData }) {
+/**
+ * Admin overrides for one of these pages.
+ *
+ * The six service pages under `app/services/<slug>/` are hand-authored for SEO,
+ * so their long-form copy stays in the page file. What an editor needs to change
+ * — hero background image or video, the "Our Services" cards, the logo strip —
+ * lives in the `services.body` JSON column and is merged in here.
+ *
+ * Deliberately fail-safe: a missing row, an unmigrated column or an unreachable
+ * database yields the empty body and the page renders exactly as it did before.
+ * These pages must never go down because the CMS is having a bad day.
+ */
+async function getOverrides(slug: string): Promise<ServiceBody> {
+  if (!slug) return EMPTY_SERVICE_BODY;
+  try {
+    const [rows] = await pool.execute(
+      'SELECT body FROM services WHERE slug = ? LIMIT 1',
+      [slug]
+    );
+    const row = (rows as { body?: unknown }[])[0];
+    return row ? parseServiceBody(row.body) : EMPTY_SERVICE_BODY;
+  } catch (err) {
+    console.error(`ServicePageLayout: could not load overrides for "${slug}":`, err);
+    return EMPTY_SERVICE_BODY;
+  }
+}
+
+/** Last path segment of the canonical URL, e.g. …/services/business-setup → business-setup. */
+function slugFromCanonical(url: string): string {
+  return url.replace(/[?#].*$/, '').replace(/\/+$/, '').split('/').pop() ?? '';
+}
+
+export default async function ServicePageLayout({
+  data,
+  slug,
+}: {
+  data: ServicePageData;
+  /** Overrides the slug used to look up admin content. Defaults to the canonical URL's. */
+  slug?: string;
+}) {
   const baseUrl = 'https://productregistrationinuae.com';
-  
+  const body = await getOverrides(slug ?? slugFromCanonical(data.canonicalUrl));
+
+  /*
+   * The "Our Services" section. When an editor has added cards they win; until
+   * then the page's own `included` list is mapped into the same shape, so all six
+   * pages get the redesigned section immediately rather than only after someone
+   * fills in the admin.
+   */
+  const ourServices = {
+    ...body.ourServices,
+    heading: body.ourServices.heading || `Our ${data.serviceName} Services`,
+    items:
+      body.ourServices.items.length > 0
+        ? body.ourServices.items
+        : data.included.map((title) => ({
+            title,
+            description: '',
+            icon: '',
+            imageUrl: '',
+            href: '',
+            badge: '',
+          })),
+  };
+
   // Generate Service Schema
   const serviceSchema = {
     "@context": "https://schema.org",
@@ -92,31 +157,9 @@ export default function ServicePageLayout({ data }: { data: ServicePageData }) {
     "url": `${baseUrl}/services/${data.serviceName.toLowerCase().replace(/\s+/g, '-')}`
   };
 
-  // Generate Breadcrumb Schema
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": baseUrl
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "Services",
-        "item": `${baseUrl}/services`
-      },
-      {
-        "@type": "ListItem",
-        "position": 3,
-        "name": data.serviceName,
-        "item": data.canonicalUrl
-      }
-    ]
-  };
+  // The BreadcrumbList JSON-LD that used to be built here is now emitted by
+  // <Breadcrumbs> from the same array it renders, so the trail a visitor sees and
+  // the markup a crawler reads cannot drift apart.
 
   // Generate FAQ Schema
   const faqSchema = {
@@ -141,64 +184,62 @@ export default function ServicePageLayout({ data }: { data: ServicePageData }) {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
-      />
-      <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
       <Header />
       <StickyMobileCTA serviceName={data.serviceName} />
 
-      {/* Breadcrumb */}
-      <div className="mx-auto max-w-7xl px-6 pt-6">
-        <Breadcrumb items={[{ label: 'Services', href: '/services' }, { label: data.title }]} />
-      </div>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
-        <div className="pointer-events-none absolute inset-0 opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, var(--teal), transparent 40%)' }} />
-        <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-16 md:pb-28 md:pt-24">
-          <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> {data.tag}
-          </div>
-          <h1 className="text-4xl leading-[1.02] tracking-tight md:text-[4.5rem]">{data.title}</h1>
-          <p className="mt-4 text-lg font-medium text-[var(--teal)]">{data.subtitle}</p>
-          <p className="mt-6 max-w-2xl text-base leading-relaxed text-[var(--cream)]/70">{data.heroDescription}</p>
+      {/*
+        Hero. The background image or video, the overlay strength and every line
+        of copy come from the admin panel when set; otherwise the page's own
+        values are used, so a service nobody has edited yet looks unchanged.
+      */}
+      <ServiceHero
+        hero={body.hero}
+        crumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Services', href: '/services' },
+          { label: body.breadcrumbLabel || data.title },
+        ]}
+        fallbackEyebrow={data.tag}
+        fallbackHeadline={data.title}
+        fallbackSubheadline={data.subtitle}
+      >
+        <div>
+          <p className="max-w-2xl text-base leading-relaxed text-[var(--cream)]/70">
+            {data.heroDescription}
+          </p>
           {data.trustBadge && (
             <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-2 text-sm text-[var(--cream)]/80">
               <svg className="h-4 w-4 text-[var(--teal)]" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
               {data.trustBadge}
             </div>
           )}
-          <div className="mt-8 flex flex-wrap gap-4">
-            <Link href={`/contact?service=${encodeURIComponent(data.serviceName)}`} className="rounded-full bg-[var(--teal)] px-8 py-4 text-sm font-semibold text-[var(--navy)] transition-all hover:-translate-y-0.5 hover:shadow-lg">
-              Get Free Assessment
-            </Link>
-            <a href="tel:+971529102088" className="rounded-full border border-[var(--cream)]/30 px-8 py-4 text-sm font-semibold text-[var(--cream)] transition-all hover:bg-[var(--cream)]/10">
-              Call +971 52 910 2088
-            </a>
-          </div>
+        </div>
+      </ServiceHero>
+
+      {/* Logo strip: actually animated now, in full colour, and uniformly sized. */}
+      <LogoTicker content={body.logos} />
+
+      {/* Stats. These previously shared a cramped row with the static logos. */}
+      <section className="border-b border-border bg-[var(--cream)]">
+        <div className="mx-auto max-w-7xl px-6 pb-10">
+          <Reveal>
+            <div className="flex flex-wrap items-center justify-center gap-10 text-center sm:gap-16">
+              <div><p className="text-2xl font-bold text-[var(--navy)]">98%</p><p className="text-xs text-muted-foreground">Success Rate</p></div>
+              <div><p className="text-2xl font-bold text-[var(--navy)]">500+</p><p className="text-xs text-muted-foreground">Products Registered</p></div>
+              <div><p className="text-2xl font-bold text-[var(--navy)]">15+</p><p className="text-xs text-muted-foreground">Years Experience</p></div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* Trust Bar */}
-      <section className="border-b border-border bg-[var(--cream)]">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-8 px-6 py-8 md:justify-between">
-          <div className="flex items-center gap-8">
-            <img src="/logos/mohap-1.svg" alt="MOHAP Logo" className="h-8 w-auto opacity-60 grayscale" />
-            <img src="/logos/DRUG.svg" alt="Dubai Municipality Logo" className="h-8 w-auto opacity-60 grayscale" />
-            <img src="/logos/67da7400f25dbf4c5bb11dc0_Meydan-FZ.webp" alt="Meydan Free Zone Logo" className="h-8 w-auto opacity-60 grayscale" />
-            <img src="/logos/SPCFZ-Sharjah.png" alt="Sharjah Free Zone Logo" className="h-8 w-auto opacity-60 grayscale hidden md:block" />
-          </div>
-          <div className="flex flex-wrap items-center gap-8 text-center">
-            <div><p className="text-2xl font-bold text-[var(--navy)]">98%</p><p className="text-xs text-muted-foreground">Success Rate</p></div>
-            <div><p className="text-2xl font-bold text-[var(--navy)]">500+</p><p className="text-xs text-muted-foreground">Products Registered</p></div>
-            <div><p className="text-2xl font-bold text-[var(--navy)]">15+</p><p className="text-xs text-muted-foreground">Years Experience</p></div>
-          </div>
-        </div>
-      </section>
+      {/*
+        "Our Services" — redesigned, full-width, and editable. Promoted out of the
+        narrow sidebar column it used to share, so the cards get real room.
+      */}
+      <OurServices content={ourServices} />
 
       {/* Main Content with Sidebar */}
       <section className="mx-auto max-w-7xl px-6 py-16 md:py-24">
@@ -206,50 +247,44 @@ export default function ServicePageLayout({ data }: { data: ServicePageData }) {
           {/* Main Content */}
           <div className="lg:col-span-8 space-y-16">
             {/* What is this service? */}
-            <div>
+            <Reveal>
               <h2 className="font-serif text-3xl leading-tight md:text-4xl">What is {data.serviceName}?</h2>
               <p className="mt-6 text-muted-foreground leading-relaxed">{data.whatIs}</p>
-            </div>
+            </Reveal>
 
             {/* Why is it important? */}
-            <div>
+            <Reveal>
               <h2 className="font-serif text-3xl leading-tight md:text-4xl">Why is {data.serviceName} Important?</h2>
               <p className="mt-6 text-muted-foreground leading-relaxed">{data.whyImportant}</p>
-            </div>
+            </Reveal>
 
             {/* Who should use this service? */}
-            <div>
+            <Reveal>
               <h2 className="font-serif text-3xl leading-tight md:text-4xl">Who Should Use {data.serviceName}?</h2>
               <p className="mt-6 text-muted-foreground leading-relaxed">{data.whoShouldUse}</p>
-            </div>
-
-            {/* Our Services */}
-            <div>
-              <h2 className="font-serif text-3xl leading-tight md:text-4xl">Our {data.serviceName} Services</h2>
-              <ServiceGrid items={data.included} />
-            </div>
+            </Reveal>
 
             {/* Process */}
-            <div>
+            <Reveal>
               <h2 className="font-serif text-3xl leading-tight md:text-4xl">{data.serviceName} Process & Timeline</h2>
               <ProcessSteps steps={data.process} />
-            </div>
+            </Reveal>
 
             {/* Requirements */}
-            <div>
+            <Reveal>
               <h2 className="font-serif text-3xl leading-tight md:text-4xl">{data.serviceName} Requirements</h2>
               <DocumentChecklist documents={data.documents} />
-            </div>
+            </Reveal>
 
             {/* Pricing */}
-            <div>
+            <Reveal>
               <h2 className="font-serif text-3xl leading-tight md:text-4xl">{data.serviceName} Pricing</h2>
               <PricingTable rows={data.pricing} />
-            </div>
+            </Reveal>
 
             {/* Case Study */}
             {data.caseStudy && (
-              <div>
+              <Reveal>
                 <h2 className="font-serif text-3xl leading-tight md:text-4xl">Success Story</h2>
                 <div className="mt-8 rounded-2xl border border-border bg-[var(--cream)] p-8">
                   <h3 className="font-serif text-2xl">{data.caseStudy.title}</h3>
@@ -265,14 +300,14 @@ export default function ServicePageLayout({ data }: { data: ServicePageData }) {
                     </blockquote>
                   )}
                 </div>
-              </div>
+              </Reveal>
             )}
 
             {/* FAQ */}
-            <div>
+            <Reveal>
               <h2 className="font-serif text-3xl leading-tight md:text-4xl">Frequently Asked Questions</h2>
               <FAQAccordion faqs={data.faq} />
-            </div>
+            </Reveal>
           </div>
 
           {/* Sidebar */}
@@ -337,8 +372,10 @@ export default function ServicePageLayout({ data }: { data: ServicePageData }) {
       {/* Related Services */}
       <section className="border-t border-border bg-[var(--cream)]">
         <div className="mx-auto max-w-7xl px-6 py-16 md:py-24">
-          <h2 className="font-serif text-3xl leading-tight md:text-4xl">Related Services</h2>
-          <RelatedServices services={data.relatedServices} />
+          <Reveal>
+            <h2 className="font-serif text-3xl leading-tight md:text-4xl">Related Services</h2>
+            <RelatedServices services={data.relatedServices} />
+          </Reveal>
         </div>
       </section>
 
@@ -346,18 +383,18 @@ export default function ServicePageLayout({ data }: { data: ServicePageData }) {
       <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
         <div className="mx-auto max-w-7xl px-6 py-20 md:py-28">
           <div className="grid gap-12 md:grid-cols-12 md:items-end">
-            <div className="md:col-span-8">
+            <Reveal className="md:col-span-8">
               <h2 className="font-serif text-4xl leading-[1.02] md:text-6xl">
                 Ready to get started?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
               </h2>
               <p className="mt-4 max-w-lg text-[var(--cream)]/70">Book a free assessment. We&apos;ll review your requirements and provide a detailed timeline and quote within 24 hours.</p>
-            </div>
-            <div className="md:col-span-4">
+            </Reveal>
+            <Reveal className="md:col-span-4" delay={120}>
               <Link href={`/contact?service=${encodeURIComponent(data.serviceName)}`} className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
                 <span className="font-serif text-lg">Book Free Assessment</span>
                 <span className="text-2xl transition-transform group-hover:translate-x-1">{'\u2192'}</span>
               </Link>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>

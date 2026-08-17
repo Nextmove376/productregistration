@@ -2,6 +2,9 @@
 import ServicePageLayout from "@/components/services/ServicePageLayout";
 import type { ServicePageData } from "@/components/services/ServicePageLayout";
 
+/** ISR floor — admin edits merged in by ServicePageLayout appear within 5 minutes. */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Pharmacy Setup Dubai | Drugstore License & Medical Registration | NextMove",
   description: "Expert pharmacy setup services in Dubai. Drugstore licensing, UAE trademark registration, and medical store setup. 98% success rate. Free consultation.",

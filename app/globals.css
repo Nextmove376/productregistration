@@ -106,6 +106,20 @@
   animation: marquee 38s linear infinite;
 }
 
+/* Logo ticker: pause while a visitor is reading it, and stop entirely for anyone
+   who has asked the OS for reduced motion. The `!important` is needed because
+   `LogoTicker` sets `animation-duration` inline. */
+.logo-ticker:hover .marquee-track,
+.logo-ticker:focus-within .marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none !important;
+  }
+}
+
 @keyframes float-slow {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
   50% { transform: translate3d(0, -18px, 0) scale(1.04); }

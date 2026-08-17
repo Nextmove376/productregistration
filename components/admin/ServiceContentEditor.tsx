@@ -13,13 +13,14 @@ import MediaPicker from '@/components/admin/MediaPicker';
 import { LABEL_CLASS, SelectField, TextField, TextareaField } from '@/components/admin/ui/fields';
 import {
   OUR_SERVICE_ICONS,
+  type LogoItem,
   type OurServiceItem,
   type ServiceBody,
 } from '@/lib/service-content';
 
 /**
  * Editor for everything stored in `services.body`: hero background media, the
- * "Our Services" section, the "What's included" list and the FAQ.
+ * "Our Services" section, the logo ticker, the "What's included" list and the FAQ.
  *
  * Fully controlled — the parent `ServiceForm` owns the `ServiceBody` value and
  * submits it as `body`, so this component holds no duplicate state that could
@@ -29,7 +30,7 @@ import {
  * input here, read it in the public component.
  */
 
-type Section = 'hero' | 'ourServices' | 'included' | 'faq';
+type Section = 'hero' | 'ourServices' | 'logos' | 'included' | 'faq';
 
 const ICON_OPTIONS = [
   { value: '', label: 'None' },
@@ -65,6 +66,22 @@ export default function ServiceContentEditor({
     if (target < 0 || target >= items.length) return;
     [items[index], items[target]] = [items[target], items[index]];
     patchOur({ items });
+  };
+
+  const patchLogos = (patch: Partial<ServiceBody['logos']>) =>
+    onChange({ ...value, logos: { ...value.logos, ...patch } });
+
+  const patchLogo = (index: number, patch: Partial<LogoItem>) =>
+    patchLogos({
+      items: value.logos.items.map((item, i) => (i === index ? { ...item, ...patch } : item)),
+    });
+
+  const moveLogo = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    const items = [...value.logos.items];
+    if (target < 0 || target >= items.length) return;
+    [items[index], items[target]] = [items[target], items[index]];
+    patchLogos({ items });
   };
 
   const openPicker = (onPick: (path: string) => void) => setPicker({ onPick });
@@ -408,6 +425,155 @@ export default function ServiceContentEditor({
         </div>
       </Panel>
 
+      {/* ---------------------------------------------------------- Logos ---- */}
+      <Panel
+        title="Logo ticker"
+        subtitle={`${value.logos.items.length} logo${value.logos.items.length === 1 ? '' : 's'} · ${
+          value.logos.grayscale ? 'greyscale' : 'full colour'
+        } · ${value.logos.speed}s loop`}
+        isOpen={open === 'logos'}
+        onToggle={() => setOpen(open === 'logos' ? null : 'logos')}
+      >
+        <p className="rounded-xl bg-gray-50 px-4 py-3 text-xs leading-relaxed text-gray-500">
+          Every logo is scaled to fit the same fixed box on the page, so uploads of
+          different shapes and sizes still line up evenly — you do not need to resize
+          them first. Transparent PNG or SVG gives the cleanest result. Leave this
+          empty to keep the four authority logos the pages ship with.
+        </p>
+
+        <TextField
+          id="logos_heading"
+          label="Strip heading"
+          type="text"
+          value={value.logos.heading}
+          onChange={(e) => patchLogos({ heading: e.target.value })}
+          maxLength={160}
+          placeholder="e.g. Approved by"
+          help="Optional small caption above the logos."
+        />
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label htmlFor="logos_speed" className={LABEL_CLASS}>
+              Scroll speed — {value.logos.speed}s per loop
+            </label>
+            <input
+              id="logos_speed"
+              type="range"
+              min={10}
+              max={120}
+              step={2}
+              value={value.logos.speed}
+              onChange={(e) => patchLogos({ speed: Number(e.target.value) })}
+              className="w-full accent-gray-900"
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Lower is faster. The strip pauses while a visitor hovers it.
+            </p>
+          </div>
+
+          <div>
+            <span className={LABEL_CLASS}>Colour</span>
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={value.logos.grayscale}
+                onChange={(e) => patchLogos({ grayscale: e.target.checked })}
+                className="mt-0.5 h-4 w-4 accent-gray-900"
+              />
+              <span className="text-xs leading-relaxed text-gray-600">
+                <span className="block font-medium text-gray-900">Show in greyscale</span>
+                Off by default, so logos appear in their real brand colours.
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {value.logos.items.map((logo, i) => (
+            <div key={i} className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <GripVertical className="h-4 w-4 shrink-0 text-gray-300" aria-hidden="true" />
+                <span className="text-xs font-medium text-gray-500">Logo {i + 1}</span>
+                <div className="ml-auto flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => moveLogo(i, -1)}
+                    disabled={i === 0}
+                    className="rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-white disabled:opacity-30"
+                    aria-label={`Move logo ${i + 1} left`}
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveLogo(i, 1)}
+                    disabled={i === value.logos.items.length - 1}
+                    className="rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-white disabled:opacity-30"
+                    aria-label={`Move logo ${i + 1} right`}
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => patchLogos({ items: value.logos.items.filter((_, x) => x !== i) })}
+                    className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                    aria-label={`Remove logo ${i + 1}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              <MediaInput
+                label="Logo file"
+                value={logo.imageUrl}
+                onChange={(v) => patchLogo(i, { imageUrl: v })}
+                onBrowse={() => openPicker((p) => patchLogo(i, { imageUrl: p }))}
+                compact
+                contain
+              />
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id={`logo_label_${i}`}
+                  label="Name"
+                  type="text"
+                  value={logo.label}
+                  onChange={(e) => patchLogo(i, { label: e.target.value })}
+                  maxLength={80}
+                  placeholder="e.g. Dubai Municipality"
+                  help="Used as the image's alt text."
+                />
+                <TextField
+                  id={`logo_href_${i}`}
+                  label="Link (optional)"
+                  type="text"
+                  value={logo.href}
+                  onChange={(e) => patchLogo(i, { href: e.target.value })}
+                  maxLength={300}
+                  placeholder="https://…"
+                />
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            disabled={value.logos.items.length >= 30}
+            onClick={() =>
+              patchLogos({ items: [...value.logos.items, { imageUrl: '', label: '', href: '' }] })
+            }
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-600 hover:border-gray-400 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> Add logo
+          </button>
+          {value.logos.items.length >= 30 && (
+            <p className="text-xs text-amber-600">Maximum of 30 logos reached.</p>
+          )}
+        </div>
+      </Panel>
+
       {/* ------------------------------------------------ What's included ---- */}
       <Panel
         title="“What’s included” list"
@@ -572,6 +738,7 @@ function MediaInput({
   help,
   preview = true,
   compact = false,
+  contain = false,
 }: {
   label: string;
   value: string;
@@ -580,14 +747,21 @@ function MediaInput({
   help?: string;
   preview?: boolean;
   compact?: boolean;
+  /** Letterbox the thumbnail instead of cropping it — correct for logos. */
+  contain?: boolean;
 }) {
+  const fit = contain ? 'object-contain bg-gray-100 p-3' : 'object-cover';
   return (
     <div>
       <span className={LABEL_CLASS}>{label}</span>
       {preview && value && (
         <div className="relative mb-2 overflow-hidden rounded-xl border border-gray-200">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="" className={compact ? 'h-20 w-full object-cover' : 'h-32 w-full object-cover'} />
+          <img
+            src={value}
+            alt=""
+            className={`w-full ${compact ? 'h-20' : 'h-32'} ${fit}`}
+          />
           <button
             type="button"
             onClick={() => onChange('')}

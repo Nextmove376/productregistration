@@ -2,6 +2,14 @@
 import ServicePageLayout from "@/components/services/ServicePageLayout";
 import type { ServicePageData } from "@/components/services/ServicePageLayout";
 
+/**
+ * ISR floor. The long-form copy below is hand-authored, but ServicePageLayout
+ * merges the hero media, "Our Services" cards and logo strip in from the admin
+ * panel — without this the page would be built once and an edit would never show
+ * up until the next deploy.
+ */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Product Registration in Dubai | Dubai Municipality & ESMA | NextMove",
   description: "Expert product registration services in Dubai & UAE. Register cosmetics, food, supplements with Dubai Municipality, ESMA & MOIAT. 98% success rate. Free assessment.",

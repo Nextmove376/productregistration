@@ -2,6 +2,9 @@
 import ServicePageLayout from "@/components/services/ServicePageLayout";
 import type { ServicePageData } from "@/components/services/ServicePageLayout";
 
+/** ISR floor — admin edits merged in by ServicePageLayout appear within 5 minutes. */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "MOHAP Registration UAE | Medical Devices & Pharmaceuticals | NextMove",
   description: "Expert MOHAP registration services in UAE. Register medical devices, pharmaceuticals, and health products with the Ministry of Health. 98% success rate. Free assessment.",

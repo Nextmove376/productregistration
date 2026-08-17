@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import Reveal from '@/components/Reveal';
 import Breadcrumbs, { type Crumb } from '@/components/Breadcrumbs';
 import { heroHasMedia, type ServiceHeroContent } from '@/lib/service-content';
@@ -57,12 +58,15 @@ export default function ServiceHero({
   fallbackEyebrow,
   fallbackHeadline,
   fallbackSubheadline,
+  children,
 }: {
   hero: ServiceHeroContent;
   crumbs: Crumb[];
   fallbackEyebrow?: string;
   fallbackHeadline: string;
   fallbackSubheadline?: string;
+  /** Extra copy between the subheadline and the CTAs (subtitle, trust badge…). */
+  children?: ReactNode;
 }) {
   const eyebrow = hero.eyebrow || fallbackEyebrow || '';
   const headline = hero.headline || fallbackHeadline;
@@ -171,6 +175,8 @@ export default function ServiceHero({
               </p>
             </Reveal>
           )}
+
+          {children && <Reveal delay={200}>{children}</Reveal>}
 
           {(hero.ctaLabel || hero.secondaryLabel) && (
             <Reveal delay={240}>

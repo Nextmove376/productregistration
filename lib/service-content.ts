@@ -119,9 +119,44 @@ export const ourServicesSchema = z
   .optional()
   .default({});
 
+export const logoItemSchema = z.object({
+  imageUrl: mediaRef,
+  /** Used as the `alt` text, so it should name the authority or partner. */
+  label: text(80),
+  href: text(300),
+});
+
+/**
+ * Logo ticker ("trust bar").
+ *
+ * The hardcoded version this replaces had three problems the editor could not
+ * fix: the logos were `grayscale` so every brand rendered black, they were sized
+ * by height alone so wildly different aspect ratios looked uneven, and the strip
+ * did not actually move. Colour is now the default, sizing is handled by a fixed
+ * box per logo in `LogoTicker`, and `speed` drives a real animation.
+ */
+export const logosSchema = z
+  .object({
+    heading: text(160),
+    /** Off by default — the old strip forced every logo to render black. */
+    grayscale: z.boolean().optional().default(false),
+    /** Seconds for one full loop. Lower is faster. */
+    speed: z.coerce.number().int().min(10).max(120).optional().default(38),
+    items: z
+      .array(logoItemSchema)
+      .max(30)
+      .optional()
+      .default([])
+      // A logo row with no image is meaningless, so it is never saved.
+      .transform((rows) => rows.filter((r) => r.imageUrl !== '')),
+  })
+  .optional()
+  .default({});
+
 export const serviceBodySchema = z.object({
   hero: heroSchema,
   ourServices: ourServicesSchema,
+  logos: logosSchema,
   /** "What's included" bullet list. Pre-existing shape, unchanged. */
   sections: z
     .array(z.string().trim().max(300))
@@ -142,6 +177,8 @@ export const serviceBodySchema = z.object({
 export type ServiceBody = z.output<typeof serviceBodySchema>;
 export type ServiceHeroContent = ServiceBody['hero'];
 export type OurServicesContent = ServiceBody['ourServices'];
+export type LogosContent = ServiceBody['logos'];
+export type LogoItem = LogosContent['items'][number];
 export type OurServiceItem = ServiceBody['ourServices']['items'][number];
 
 /** A fully-defaulted body, used when a row has no content at all. */

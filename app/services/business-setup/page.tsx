@@ -2,6 +2,9 @@
 import ServicePageLayout from "@/components/services/ServicePageLayout";
 import type { ServicePageData } from "@/components/services/ServicePageLayout";
 
+/** ISR floor — admin edits merged in by ServicePageLayout appear within 5 minutes. */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Business Setup Dubai | Company Formation & Trade License | NextMove",
   description: "Expert business setup services in Dubai & UAE. Mainland, freezone, and offshore company formation. Trade license processing. 98% success rate. Free consultation.",

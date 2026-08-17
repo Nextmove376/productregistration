@@ -2,6 +2,9 @@
 import ServicePageLayout from "@/components/services/ServicePageLayout";
 import type { ServicePageData } from "@/components/services/ServicePageLayout";
 
+/** ISR floor — admin edits merged in by ServicePageLayout appear within 5 minutes. */
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Regulatory Approvals UAE | ESMA, GMP, Halal Certification | NextMove",
   description: "Expert regulatory approval services in UAE. ESMA certification, GMP verification, Halal certification, and lab testing coordination. 98% success rate. Free assessment.",
