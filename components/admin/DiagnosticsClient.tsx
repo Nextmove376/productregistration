@@ -303,6 +303,30 @@ export default function DiagnosticsClient() {
                 </p>
               ) : null}
 
+              {/*
+                The directory being absent is the failure that matters, and it is not
+                self-explanatory: the upload route creates this directory on demand, so
+                if it is missing, something deleted it — on this host, the deploy, which
+                replaces the application directory and takes untracked folders with it.
+                Uploading would appear to work again and break again on the next deploy,
+                so the fix has to move the directory outside the deployed tree.
+              */}
+              {!report.uploads.exists ? (
+                <div className="border-b border-amber-100 bg-amber-50 px-6 py-3 text-xs text-amber-900">
+                  <strong>This directory does not exist, so no image can be served.</strong>
+                  <p className="mt-1">
+                    The upload route creates it automatically, so if it is missing it was
+                    deleted — normally by a deploy replacing the application directory. Uploading
+                    again would work until the next deploy and then break again.
+                  </p>
+                  <p className="mt-1">
+                    Fix it permanently by pointing{' '}
+                    <code className="font-mono">UPLOAD_DIR_OVERRIDE</code> at a directory{' '}
+                    <em>outside</em> the deployed folder, then restarting the app.
+                  </p>
+                </div>
+              ) : null}
+
               <dl className="grid gap-px bg-gray-100 sm:grid-cols-2">
                 <ShapeRow label="Resolved path" value={report.uploads.dir} required />
                 <ShapeRow label="Working directory" value={report.uploads.cwd} />
@@ -311,10 +335,21 @@ export default function DiagnosticsClient() {
                   value={report.uploads.exists ? 'yes' : 'no — nothing can be served'}
                   required
                 />
+                {/*
+                  Only meaningful once the directory exists. Reporting "uploads will fail"
+                  for an absent directory was actively misleading: the route would have
+                  created it.
+                */}
                 <ShapeRow
                   label="Writable"
-                  value={report.uploads.writable ? 'yes' : 'no — uploads will fail'}
-                  required
+                  value={
+                    !report.uploads.exists
+                      ? 'not checked — directory absent'
+                      : report.uploads.writable
+                        ? 'yes'
+                        : 'no — uploads will fail'
+                  }
+                  required={report.uploads.exists}
                 />
                 <ShapeRow label="Files present" value={String(report.uploads.fileCount)} />
                 {report.uploads.error ? (

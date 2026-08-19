@@ -65,9 +65,14 @@ CREATE TABLE IF NOT EXISTS post_revisions (
 INSERT IGNORE INTO schema_migrations (name) VALUES ('009_post_revisions');
 
 -- ===================================================================
--- Verify — should return one row, and 21 columns.
+-- Verify — run these SEPARATELY, after the statements above succeed.
+--
+-- Deliberately NOT using information_schema: the Hostinger database user
+-- (u570403113_product_reg) is denied access to it and returns
+-- "#1044 - Access denied for user ... to database 'information_schema'",
+-- which aborts the whole batch even though the CREATE TABLEs above ran fine.
+-- SHOW works on a restricted user because it only reports objects you own.
 -- ===================================================================
-SELECT name, applied_at FROM schema_migrations WHERE name = '009_post_revisions';
-SELECT COUNT(*) AS column_count
-  FROM information_schema.COLUMNS
-  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'post_revisions';
+-- SHOW TABLES LIKE 'post_revisions';
+-- SHOW COLUMNS FROM post_revisions;
+-- SELECT name, applied_at FROM schema_migrations WHERE name = '009_post_revisions';

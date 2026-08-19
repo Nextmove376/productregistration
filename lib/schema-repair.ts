@@ -177,7 +177,10 @@ async function inspectUploads(): Promise<NonNullable<SchemaReport['uploads']>> {
     const stat = await fs.stat(UPLOAD_DIR);
     result.exists = stat.isDirectory();
   } catch {
-    return result; // absent is a finding, not an error
+    // Absent is a finding, not an error — and it is the common one, because the
+    // upload route `mkdir`s this directory on demand. A missing directory here
+    // almost always means a deploy deleted it, taking the media library with it.
+    return result;
   }
 
   try {
