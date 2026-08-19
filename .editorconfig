@@ -1,0 +1,25 @@
+# Prevents the mojibake this repo already had to be repaired once.
+#
+# Every corrupted character (em dashes, arrows, stars in the landing components) came from
+# one accident: a UTF-8 file reopened by an editor that assumed the Windows-1252 codepage,
+# then saved again as UTF-8. `charset = utf-8` below is what stops an editor from guessing.
+# `npm run encoding:check` is the backstop if one guesses anyway.
+#
+# Line endings are deliberately left alone: this is a Windows checkout and forcing LF here
+# would rewrite every file in the repo for no encoding benefit.
+
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+# Two trailing spaces are a hard line break in Markdown.
+trim_trailing_whitespace = false
+
+[*.{sql,json}]
+indent_size = 2

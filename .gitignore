@@ -50,6 +50,13 @@ next-env.d.ts
 /data/*.db-wal
 /data/*.sqlite
 
+# backups — never commit these.
+# `npm run db:backup` writes full logical SQL dumps here, including the
+# `submissions` table (names, emails, phone numbers). `scripts/fix-mojibake.ts`
+# and `scripts/seed-service-body.ts` also write their reversal snapshots here.
+# These are local restore artifacts: keep them on the machine, off GitHub.
+/backups/
+
 # uploads (survives deploys via FTP)
 # /public/uploads/  # uncomment to ignore uploads in git
 

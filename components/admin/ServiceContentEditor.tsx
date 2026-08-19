@@ -3,39 +3,121 @@
 import { useState } from 'react';
 import {
   ChevronDown,
-  GripVertical,
   ImagePlus,
   Plus,
   Trash2,
   X,
 } from 'lucide-react';
 import MediaPicker from '@/components/admin/MediaPicker';
-import { LABEL_CLASS, SelectField, TextField, TextareaField } from '@/components/admin/ui/fields';
+import {
+  CheckboxField,
+  LABEL_CLASS,
+  SelectField,
+  TextField,
+  TextareaField,
+} from '@/components/admin/ui/fields';
 import {
   OUR_SERVICE_ICONS,
   type LogoItem,
   type OurServiceItem,
   type ServiceBody,
+  type ServiceDifferentiator,
+  type ServiceDocumentItem,
+  type ServicePricingRow,
+  type ServiceProcessStep,
+  type ServiceRelated,
+  type ServiceStat,
 } from '@/lib/service-content';
 
 /**
- * Editor for everything stored in `services.body`: hero background media, the
- * "Our Services" section, the logo ticker, the "What's included" list and the FAQ.
+ * Editor for everything stored in `services.body`: hero media and copy, the "Our
+ * Services" section, the logo ticker, the long-form prose, process steps, required
+ * documents, pricing, "why us" cards, the case study, FAQ, related services, the
+ * closing CTA and per-page SEO.
  *
  * Fully controlled — the parent `ServiceForm` owns the `ServiceBody` value and
  * submits it as `body`, so this component holds no duplicate state that could
- * drift out of sync with what gets saved.
+ * drift out of sync with what gets saved. The only local state is which tab and
+ * which panel are open.
+ *
+ * Every field is an *override*: `resolveServiceContent()` treats empty as "not
+ * edited" and keeps the page's built-in copy, so clearing a field restores the
+ * built-in text rather than blanking a section. That is stated in the UI itself
+ * because it is not guessable, and it is why there is no per-section on/off
+ * switch — the schema has no such field, and faking one here would break the
+ * contract the public pages rely on.
  *
  * Adding a field is a three-line change: add it to `serviceBodySchema`, add an
  * input here, read it in the public component.
  */
 
-type Section = 'hero' | 'ourServices' | 'logos' | 'included' | 'faq';
+/** One collapsible panel. Also the accordion key, so only one is ever open. */
+type Section =
+  | 'hero'
+  | 'intro'
+  | 'stats'
+  | 'prose'
+  | 'included'
+  | 'differentiators'
+  | 'ourServices'
+  | 'logos'
+  | 'process'
+  | 'documents'
+  | 'pricing'
+  | 'caseStudy'
+  | 'faq'
+  | 'relatedServices'
+  | 'cta'
+  | 'seo';
+
+/** Tab groups. A flat scroll of sixteen panels is unnavigable, so they are grouped. */
+type TabId = 'hero' | 'copy' | 'sections' | 'process' | 'proof' | 'seo';
+
+/** `first` is opened when the tab is selected, so a switch never lands on a blank column. */
+const TABS: { id: TabId; label: string; first: Section }[] = [
+  { id: 'hero', label: 'Hero', first: 'hero' },
+  { id: 'sections', label: 'Sections', first: 'ourServices' },
+  { id: 'copy', label: 'Body copy', first: 'prose' },
+  { id: 'process', label: 'Process & pricing', first: 'process' },
+  { id: 'proof', label: 'Proof & CTA', first: 'caseStudy' },
+  { id: 'seo', label: 'SEO', first: 'seo' },
+];
+
 
 const ICON_OPTIONS = [
   { value: '', label: 'None' },
   ...OUR_SERVICE_ICONS.map((name) => ({ value: name, label: name })),
 ];
+
+/**
+ * Blank rows for every repeater, annotated with the schema's own row types.
+ *
+ * The annotations are the point: a field added to `serviceBodySchema` breaks this
+ * object at compile time instead of silently persisting a row with a missing key.
+ * That is exactly how `alt` slipped through when it was added to
+ * `ourServiceItemSchema` — an inline literal had no type to check against.
+ */
+const BLANK: {
+  item: OurServiceItem;
+  logo: LogoItem;
+  stat: ServiceStat;
+  step: ServiceProcessStep;
+  document: ServiceDocumentItem;
+  pricing: ServicePricingRow;
+  differentiator: ServiceDifferentiator;
+  related: ServiceRelated;
+  faq: ServiceBody['faq'][number];
+} = {
+  item: { title: '', description: '', icon: '', imageUrl: '', alt: '', href: '', badge: '' },
+  logo: { imageUrl: '', label: '', href: '' },
+  stat: { value: '', label: '' },
+  step: { title: '', description: '', timeline: '' },
+  document: { text: '', required: true },
+  pricing: { service: '', timeline: '', price: '' },
+  differentiator: { icon: '', title: '', description: '' },
+  related: { slug: '', title: '', summary: '', tag: '' },
+  faq: { q: '', a: '' },
+};
 
 export default function ServiceContentEditor({
   value,
@@ -44,10 +126,19 @@ export default function ServiceContentEditor({
   value: ServiceBody;
   onChange: (next: ServiceBody) => void;
 }) {
+  const [tab, setTab] = useState<TabId>('hero');
   const [open, setOpen] = useState<Section | null>('hero');
   const [picker, setPicker] = useState<null | {
     onPick: (path: string) => void;
   }>(null);
+
+  /** Both bits of chrome every panel needs, so the call sites stay one line each. */
+  const panel = (group: TabId, id: Section) => ({
+    group,
+    activeGroup: tab,
+    isOpen: open === id,
+    onToggle: () => setOpen(open === id ? null : id),
+  });
 
   const patchHero = (patch: Partial<ServiceBody['hero']>) =>
     onChange({ ...value, hero: { ...value.hero, ...patch } });
@@ -86,14 +177,56 @@ export default function ServiceContentEditor({
 
   const openPicker = (onPick: (path: string) => void) => setPicker({ onPick });
 
+  const patchProse = (patch: Partial<ServiceBody['prose']>) =>
+    onChange({ ...value, prose: { ...value.prose, ...patch } });
+
+  const patchCaseStudy = (patch: Partial<ServiceBody['caseStudy']>) =>
+    onChange({ ...value, caseStudy: { ...value.caseStudy, ...patch } });
+
+  const patchCta = (patch: Partial<ServiceBody['cta']>) =>
+    onChange({ ...value, cta: { ...value.cta, ...patch } });
+
+  const patchSeo = (patch: Partial<ServiceBody['seo']>) =>
+    onChange({ ...value, seo: { ...value.seo, ...patch } });
+
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap gap-1 rounded-2xl border border-gray-200 bg-white p-1.5">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => {
+              setTab(t.id);
+              setOpen(t.first);
+            }}
+            aria-current={tab === t.id ? 'true' : undefined}
+            className={`rounded-xl px-3.5 py-2 text-xs font-medium transition-colors ${
+              tab === t.id
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/*
+        Stated once, up front, because it is the one rule that surprises editors:
+        every field here overrides built-in page copy, and empty means "not edited".
+      */}
+      <p className="rounded-xl bg-gray-50 px-4 py-3 text-xs leading-relaxed text-gray-500">
+        Everything below overrides the copy this page already ships with. Leaving a
+        field or a list empty keeps the built-in version — clearing one restores the
+        built-in text rather than blanking the section on the live site.
+      </p>
+
       {/* ---------------------------------------------------------- Hero ---- */}
       <Panel
         title="Hero & background media"
         subtitle="Background image or video, overlay strength and headline overrides"
-        isOpen={open === 'hero'}
-        onToggle={() => setOpen(open === 'hero' ? null : 'hero')}
+        {...panel('hero', 'hero')}
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <SelectField
@@ -250,12 +383,99 @@ export default function ServiceContentEditor({
         />
       </Panel>
 
+      {/* --------------------------------------------------- Intro copy ---- */}
+      <Panel
+        title="Intro copy"
+        subtitle="Tag, subtitle, hero paragraph and trust badge"
+        {...panel('hero', 'intro')}
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <TextField
+            id="body_tag"
+            label="Tag"
+            type="text"
+            value={value.tag}
+            onChange={(e) => onChange({ ...value, tag: e.target.value })}
+            maxLength={80}
+            help="Small label above the page title."
+          />
+          <TextField
+            id="body_trust_badge"
+            label="Trust badge"
+            type="text"
+            value={value.trustBadge}
+            onChange={(e) => onChange({ ...value, trustBadge: e.target.value })}
+            maxLength={160}
+            placeholder="e.g. 500+ products registered"
+          />
+        </div>
+
+        <TextareaField
+          id="body_subtitle"
+          label="Subtitle"
+          value={value.subtitle}
+          onChange={(e) => onChange({ ...value, subtitle: e.target.value })}
+          rows={2}
+          maxLength={400}
+          showCount
+        />
+
+        <TextareaField
+          id="body_hero_description"
+          label="Hero paragraph"
+          value={value.heroDescription}
+          onChange={(e) => onChange({ ...value, heroDescription: e.target.value })}
+          rows={4}
+          maxLength={1000}
+          showCount
+          help="The opening paragraph under the page title."
+        />
+      </Panel>
+
+      {/* -------------------------------------------------------- Stats ---- */}
+      <Panel
+        title="Hero stats"
+        subtitle={`${value.stats.length} of 6`}
+        {...panel('hero', 'stats')}
+      >
+        <Repeater
+          rows={value.stats}
+          onRows={(stats) => onChange({ ...value, stats })}
+          blank={BLANK.stat}
+          label="Stat"
+          addLabel="Add stat"
+          max={6}
+        >
+          {(row, i, patch) => (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField
+                id={`stat_value_${i}`}
+                label="Value"
+                type="text"
+                value={row.value}
+                onChange={(e) => patch({ value: e.target.value })}
+                maxLength={40}
+                placeholder="e.g. 500+"
+              />
+              <TextField
+                id={`stat_label_${i}`}
+                label="Label"
+                type="text"
+                value={row.label}
+                onChange={(e) => patch({ label: e.target.value })}
+                maxLength={120}
+                placeholder="e.g. Products registered"
+              />
+            </div>
+          )}
+        </Repeater>
+      </Panel>
+
       {/* -------------------------------------------------- Our Services ---- */}
       <Panel
         title="“Our Services” section"
         subtitle={`${value.ourServices.items.length} card${value.ourServices.items.length === 1 ? '' : 's'} · ${value.ourServices.layout} layout`}
-        isOpen={open === 'ourServices'}
-        onToggle={() => setOpen(open === 'ourServices' ? null : 'ourServices')}
+        {...panel('sections', 'ourServices')}
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <TextField
@@ -310,7 +530,6 @@ export default function ServiceContentEditor({
           {value.ourServices.items.map((item, i) => (
             <div key={i} className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
               <div className="mb-3 flex items-center gap-2">
-                <GripVertical className="h-4 w-4 shrink-0 text-gray-300" aria-hidden="true" />
                 <span className="text-xs font-medium text-gray-500">Card {i + 1}</span>
                 <div className="ml-auto flex items-center gap-1">
                   <button
@@ -392,14 +611,25 @@ export default function ServiceContentEditor({
                   maxLength={300}
                   placeholder="/services/…"
                 />
-                <MediaInput
-                  label="Image"
-                  value={item.imageUrl}
-                  onChange={(v) => patchItem(i, { imageUrl: v })}
-                  onBrowse={() => openPicker((p) => patchItem(i, { imageUrl: p }))}
-                  help="Used by the alternating-rows layout."
-                  compact
-                />
+                <div className="space-y-3">
+                  <MediaInput
+                    label="Image"
+                    value={item.imageUrl}
+                    onChange={(v) => patchItem(i, { imageUrl: v })}
+                    onBrowse={() => openPicker((p) => patchItem(i, { imageUrl: p }))}
+                    help="Used by the alternating-rows layout."
+                    compact
+                  />
+                  <TextField
+                    id={`item_alt_${i}`}
+                    label="Image alt text"
+                    type="text"
+                    value={item.alt}
+                    onChange={(e) => patchItem(i, { alt: e.target.value })}
+                    maxLength={200}
+                    help="Describes the picture for screen readers and when the image fails to load. Falls back to the title when blank."
+                  />
+                </div>
               </div>
             </div>
           ))}
@@ -409,10 +639,7 @@ export default function ServiceContentEditor({
             disabled={value.ourServices.items.length >= 24}
             onClick={() =>
               patchOur({
-                items: [
-                  ...value.ourServices.items,
-                  { title: '', description: '', icon: '', imageUrl: '', href: '', badge: '' },
-                ],
+                items: [...value.ourServices.items, { ...BLANK.item }],
               })
             }
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-600 hover:border-gray-400 hover:bg-gray-50 disabled:opacity-50"
@@ -431,8 +658,7 @@ export default function ServiceContentEditor({
         subtitle={`${value.logos.items.length} logo${value.logos.items.length === 1 ? '' : 's'} · ${
           value.logos.grayscale ? 'greyscale' : 'full colour'
         } · ${value.logos.speed}s loop`}
-        isOpen={open === 'logos'}
-        onToggle={() => setOpen(open === 'logos' ? null : 'logos')}
+        {...panel('sections', 'logos')}
       >
         <p className="rounded-xl bg-gray-50 px-4 py-3 text-xs leading-relaxed text-gray-500">
           Every logo is scaled to fit the same fixed box on the page, so uploads of
@@ -493,7 +719,6 @@ export default function ServiceContentEditor({
           {value.logos.items.map((logo, i) => (
             <div key={i} className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
               <div className="mb-3 flex items-center gap-2">
-                <GripVertical className="h-4 w-4 shrink-0 text-gray-300" aria-hidden="true" />
                 <span className="text-xs font-medium text-gray-500">Logo {i + 1}</span>
                 <div className="ml-auto flex items-center gap-1">
                   <button
@@ -562,7 +787,7 @@ export default function ServiceContentEditor({
             type="button"
             disabled={value.logos.items.length >= 30}
             onClick={() =>
-              patchLogos({ items: [...value.logos.items, { imageUrl: '', label: '', href: '' }] })
+              patchLogos({ items: [...value.logos.items, { ...BLANK.logo }] })
             }
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-600 hover:border-gray-400 hover:bg-gray-50 disabled:opacity-50"
           >
@@ -574,12 +799,86 @@ export default function ServiceContentEditor({
         </div>
       </Panel>
 
+      {/* -------------------------------------------------- Long-form copy ---- */}
+      <Panel
+        title="Long-form copy"
+        subtitle="Overview and the three explainer sections"
+        {...panel('copy', 'prose')}
+      >
+        <TextareaField
+          id="prose_overview"
+          label="Overview"
+          value={value.prose.overview}
+          onChange={(e) => patchProse({ overview: e.target.value })}
+          rows={4}
+          maxLength={2000}
+          showCount
+          help="Plain text — paragraphs, not HTML. Blank lines separate paragraphs."
+        />
+
+        <TextField
+          id="prose_whatis_heading"
+          label="“What is it” heading"
+          type="text"
+          value={value.prose.whatIsHeading}
+          onChange={(e) => patchProse({ whatIsHeading: e.target.value })}
+          maxLength={200}
+          placeholder="Falls back to the built-in heading"
+        />
+        <TextareaField
+          id="prose_whatis"
+          label="“What is it” body"
+          value={value.prose.whatIs}
+          onChange={(e) => patchProse({ whatIs: e.target.value })}
+          rows={6}
+          maxLength={4000}
+          showCount
+        />
+
+        <TextField
+          id="prose_why_heading"
+          label="“Why it matters” heading"
+          type="text"
+          value={value.prose.whyImportantHeading}
+          onChange={(e) => patchProse({ whyImportantHeading: e.target.value })}
+          maxLength={200}
+          placeholder="Falls back to the built-in heading"
+        />
+        <TextareaField
+          id="prose_why"
+          label="“Why it matters” body"
+          value={value.prose.whyImportant}
+          onChange={(e) => patchProse({ whyImportant: e.target.value })}
+          rows={6}
+          maxLength={4000}
+          showCount
+        />
+
+        <TextField
+          id="prose_who_heading"
+          label="“Who needs it” heading"
+          type="text"
+          value={value.prose.whoShouldUseHeading}
+          onChange={(e) => patchProse({ whoShouldUseHeading: e.target.value })}
+          maxLength={200}
+          placeholder="Falls back to the built-in heading"
+        />
+        <TextareaField
+          id="prose_who"
+          label="“Who needs it” body"
+          value={value.prose.whoShouldUse}
+          onChange={(e) => patchProse({ whoShouldUse: e.target.value })}
+          rows={6}
+          maxLength={4000}
+          showCount
+        />
+      </Panel>
+
       {/* ------------------------------------------------ What's included ---- */}
       <Panel
         title="“What’s included” list"
         subtitle={`${value.sections.length} bullet${value.sections.length === 1 ? '' : 's'}`}
-        isOpen={open === 'included'}
-        onToggle={() => setOpen(open === 'included' ? null : 'included')}
+        {...panel('copy', 'included')}
       >
         <div className="space-y-2">
           {value.sections.map((row, i) => (
@@ -618,12 +917,272 @@ export default function ServiceContentEditor({
         </div>
       </Panel>
 
+      {/* ----------------------------------------------- Why choose us ---- */}
+      <Panel
+        title="“Why choose us” cards"
+        subtitle={`${value.differentiators.length} of 12`}
+        {...panel('copy', 'differentiators')}
+      >
+        <Repeater
+          rows={value.differentiators}
+          onRows={(differentiators) => onChange({ ...value, differentiators })}
+          blank={BLANK.differentiator}
+          label="Reason"
+          addLabel="Add reason"
+          max={12}
+        >
+          {(row, i, patch) => (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id={`diff_title_${i}`}
+                  label="Title"
+                  type="text"
+                  value={row.title}
+                  onChange={(e) => patch({ title: e.target.value })}
+                  maxLength={160}
+                />
+                <SelectField
+                  id={`diff_icon_${i}`}
+                  label="Icon"
+                  value={row.icon}
+                  onChange={(e) => patch({ icon: e.target.value })}
+                  options={ICON_OPTIONS}
+                />
+              </div>
+              <div className="mt-4">
+                <TextareaField
+                  id={`diff_desc_${i}`}
+                  label="Description"
+                  value={row.description}
+                  onChange={(e) => patch({ description: e.target.value })}
+                  rows={2}
+                  maxLength={600}
+                  showCount
+                />
+              </div>
+            </>
+          )}
+        </Repeater>
+      </Panel>
+
+      {/* ------------------------------------------------------ Process ---- */}
+      <Panel
+        title="Process steps"
+        subtitle={`${value.process.length} step${value.process.length === 1 ? '' : 's'}`}
+        {...panel('process', 'process')}
+      >
+        <p className="rounded-xl bg-gray-50 px-4 py-3 text-xs leading-relaxed text-gray-500">
+          Step numbers are not stored — the page numbers the steps 1, 2, 3… from the
+          order below, so moving a step renumbers it and everything after it. Use the
+          arrows to reorder. Leave the list empty to keep the steps the page ships with.
+        </p>
+
+        <Repeater
+          rows={value.process}
+          onRows={(process) => onChange({ ...value, process })}
+          blank={BLANK.step}
+          label="Step"
+          addLabel="Add step"
+          max={20}
+        >
+          {(row, i, patch) => (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id={`proc_title_${i}`}
+                  label={`Title — shows as step ${i + 1}`}
+                  type="text"
+                  value={row.title}
+                  onChange={(e) => patch({ title: e.target.value })}
+                  maxLength={200}
+                />
+                <TextField
+                  id={`proc_timeline_${i}`}
+                  label="Timeline"
+                  type="text"
+                  value={row.timeline}
+                  onChange={(e) => patch({ timeline: e.target.value })}
+                  maxLength={80}
+                  placeholder="e.g. 3–5 working days"
+                />
+              </div>
+              <div className="mt-4">
+                <TextareaField
+                  id={`proc_desc_${i}`}
+                  label="Description"
+                  value={row.description}
+                  onChange={(e) => patch({ description: e.target.value })}
+                  rows={3}
+                  maxLength={1200}
+                  showCount
+                />
+              </div>
+            </>
+          )}
+        </Repeater>
+      </Panel>
+
+      {/* ---------------------------------------------------- Documents ---- */}
+      <Panel
+        title="Required documents"
+        subtitle={`${value.documents.length} document${value.documents.length === 1 ? '' : 's'}`}
+        {...panel('process', 'documents')}
+      >
+        <Repeater
+          rows={value.documents}
+          onRows={(documents) => onChange({ ...value, documents })}
+          blank={BLANK.document}
+          label="Document"
+          addLabel="Add document"
+          max={40}
+        >
+          {(row, i, patch) => (
+            <>
+              <TextField
+                id={`doc_text_${i}`}
+                label="Document"
+                type="text"
+                value={row.text}
+                onChange={(e) => patch({ text: e.target.value })}
+                maxLength={300}
+                placeholder="e.g. Valid trade licence"
+              />
+              <div className="mt-3">
+                <CheckboxField
+                  id={`doc_required_${i}`}
+                  label="Required"
+                  checked={row.required}
+                  onChange={(checked) => patch({ required: checked })}
+                  help="Untick for documents that are only needed in some cases."
+                />
+              </div>
+            </>
+          )}
+        </Repeater>
+      </Panel>
+
+      {/* ------------------------------------------------------ Pricing ---- */}
+      <Panel
+        title="Pricing table"
+        subtitle={`${value.pricing.length} row${value.pricing.length === 1 ? '' : 's'}`}
+        {...panel('process', 'pricing')}
+      >
+        <Repeater
+          rows={value.pricing}
+          onRows={(pricing) => onChange({ ...value, pricing })}
+          blank={BLANK.pricing}
+          label="Row"
+          addLabel="Add row"
+          max={20}
+        >
+          {(row, i, patch) => (
+            <>
+              <TextField
+                id={`price_service_${i}`}
+                label="Service"
+                type="text"
+                value={row.service}
+                onChange={(e) => patch({ service: e.target.value })}
+                maxLength={200}
+              />
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id={`price_timeline_${i}`}
+                  label="Timeline"
+                  type="text"
+                  value={row.timeline}
+                  onChange={(e) => patch({ timeline: e.target.value })}
+                  maxLength={80}
+                  placeholder="e.g. 2–3 weeks"
+                />
+                <TextField
+                  id={`price_price_${i}`}
+                  label="Price"
+                  type="text"
+                  value={row.price}
+                  onChange={(e) => patch({ price: e.target.value })}
+                  maxLength={80}
+                  placeholder="e.g. From AED 4,500"
+                  help="Free text, so “On request” works too."
+                />
+              </div>
+            </>
+          )}
+        </Repeater>
+      </Panel>
+
+      {/* --------------------------------------------------- Case study ---- */}
+      <Panel
+        title="Case study"
+        subtitle={value.caseStudy.title || 'Empty — the page keeps its built-in case study'}
+        {...panel('proof', 'caseStudy')}
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <TextField
+            id="case_title"
+            label="Title"
+            type="text"
+            value={value.caseStudy.title}
+            onChange={(e) => patchCaseStudy({ title: e.target.value })}
+            maxLength={200}
+            help="The block only appears once this is filled in."
+          />
+          <TextField
+            id="case_client"
+            label="Client"
+            type="text"
+            value={value.caseStudy.client}
+            onChange={(e) => patchCaseStudy({ client: e.target.value })}
+            maxLength={120}
+            placeholder="e.g. A European cosmetics brand"
+          />
+        </div>
+
+        <TextareaField
+          id="case_problem"
+          label="Problem"
+          value={value.caseStudy.problem}
+          onChange={(e) => patchCaseStudy({ problem: e.target.value })}
+          rows={3}
+          maxLength={1500}
+          showCount
+        />
+        <TextareaField
+          id="case_solution"
+          label="Solution"
+          value={value.caseStudy.solution}
+          onChange={(e) => patchCaseStudy({ solution: e.target.value })}
+          rows={3}
+          maxLength={1500}
+          showCount
+        />
+        <TextareaField
+          id="case_result"
+          label="Result"
+          value={value.caseStudy.result}
+          onChange={(e) => patchCaseStudy({ result: e.target.value })}
+          rows={3}
+          maxLength={1500}
+          showCount
+        />
+        <TextareaField
+          id="case_quote"
+          label="Client quote"
+          value={value.caseStudy.quote}
+          onChange={(e) => patchCaseStudy({ quote: e.target.value })}
+          rows={3}
+          maxLength={800}
+          showCount
+          help="Without the surrounding quotation marks — the page adds those."
+        />
+      </Panel>
+
       {/* ------------------------------------------------------------ FAQ ---- */}
       <Panel
         title="FAQ"
         subtitle={`${value.faq.length} question${value.faq.length === 1 ? '' : 's'}`}
-        isOpen={open === 'faq'}
-        onToggle={() => setOpen(open === 'faq' ? null : 'faq')}
+        {...panel('proof', 'faq')}
       >
         <div className="space-y-3">
           {value.faq.map((row, i) => (
@@ -673,12 +1232,188 @@ export default function ServiceContentEditor({
           <button
             type="button"
             disabled={value.faq.length >= 40}
-            onClick={() => onChange({ ...value, faq: [...value.faq, { q: '', a: '' }] })}
+            onClick={() => onChange({ ...value, faq: [...value.faq, { ...BLANK.faq }] })}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-2.5 text-sm font-medium text-gray-600 hover:border-gray-400 hover:bg-gray-50 disabled:opacity-50"
           >
             <Plus className="h-4 w-4" /> Add question
           </button>
         </div>
+      </Panel>
+
+      {/* --------------------------------------------- Related services ---- */}
+      <Panel
+        title="Related services"
+        subtitle={`${value.relatedServices.length} of 12`}
+        {...panel('proof', 'relatedServices')}
+      >
+        <Repeater
+          rows={value.relatedServices}
+          onRows={(relatedServices) => onChange({ ...value, relatedServices })}
+          blank={BLANK.related}
+          label="Service"
+          addLabel="Add related service"
+          max={12}
+        >
+          {(row, i, patch) => (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id={`rel_title_${i}`}
+                  label="Title"
+                  type="text"
+                  value={row.title}
+                  onChange={(e) => patch({ title: e.target.value })}
+                  maxLength={200}
+                />
+                <TextField
+                  id={`rel_slug_${i}`}
+                  label="Slug"
+                  type="text"
+                  value={row.slug}
+                  onChange={(e) => patch({ slug: e.target.value })}
+                  maxLength={120}
+                  placeholder="product-registration"
+                  help={`Links to /services/${row.slug || '…'}`}
+                />
+              </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <TextField
+                  id={`rel_tag_${i}`}
+                  label="Tag"
+                  type="text"
+                  value={row.tag}
+                  onChange={(e) => patch({ tag: e.target.value })}
+                  maxLength={60}
+                />
+                <TextField
+                  id={`rel_summary_${i}`}
+                  label="Summary"
+                  type="text"
+                  value={row.summary}
+                  onChange={(e) => patch({ summary: e.target.value })}
+                  maxLength={400}
+                />
+              </div>
+            </>
+          )}
+        </Repeater>
+      </Panel>
+
+      {/* ---------------------------------------------------- CTA band ---- */}
+      <Panel
+        title="Closing call to action"
+        subtitle={value.cta.heading || 'Empty — the page keeps its built-in band'}
+        {...panel('proof', 'cta')}
+      >
+        <TextField
+          id="cta_heading"
+          label="Heading"
+          type="text"
+          value={value.cta.heading}
+          onChange={(e) => patchCta({ heading: e.target.value })}
+          maxLength={200}
+          placeholder="e.g. Ready to get started?"
+        />
+        <TextareaField
+          id="cta_body"
+          label="Body"
+          value={value.cta.body}
+          onChange={(e) => patchCta({ body: e.target.value })}
+          rows={3}
+          maxLength={600}
+          showCount
+        />
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <TextField
+            id="cta_primary_label"
+            label="Primary button"
+            type="text"
+            value={value.cta.primaryLabel}
+            onChange={(e) => patchCta({ primaryLabel: e.target.value })}
+            maxLength={60}
+          />
+          <TextField
+            id="cta_primary_href"
+            label="Primary link"
+            type="text"
+            value={value.cta.primaryHref}
+            onChange={(e) => patchCta({ primaryHref: e.target.value })}
+            maxLength={300}
+            placeholder="/contact"
+          />
+          <TextField
+            id="cta_secondary_label"
+            label="Secondary button"
+            type="text"
+            value={value.cta.secondaryLabel}
+            onChange={(e) => patchCta({ secondaryLabel: e.target.value })}
+            maxLength={60}
+          />
+          <TextField
+            id="cta_secondary_href"
+            label="Secondary link"
+            type="text"
+            value={value.cta.secondaryHref}
+            onChange={(e) => patchCta({ secondaryHref: e.target.value })}
+            maxLength={300}
+          />
+        </div>
+      </Panel>
+
+      {/* -------------------------------------------------- Search & social ---- */}
+      <Panel
+        title="Search & social"
+        subtitle={
+          value.seo.noindex ? 'Hidden from search engines' : 'Meta, OG image and canonical overrides'
+        }
+        {...panel('seo', 'seo')}
+      >
+        <TextField
+          id="seo_meta_title"
+          label="Meta title"
+          type="text"
+          value={value.seo.metaTitle}
+          onChange={(e) => patchSeo({ metaTitle: e.target.value })}
+          maxLength={200}
+          help="Overrides the Meta title in the SEO card below. Blank uses that one."
+        />
+        <TextareaField
+          id="seo_meta_description"
+          label="Meta description"
+          value={value.seo.metaDescription}
+          onChange={(e) => patchSeo({ metaDescription: e.target.value })}
+          rows={3}
+          maxLength={400}
+          showCount
+        />
+
+        <MediaInput
+          label="Social share image"
+          value={value.seo.ogImage}
+          onChange={(v) => patchSeo({ ogImage: v })}
+          onBrowse={() => openPicker((p) => patchSeo({ ogImage: p }))}
+          help="Shown when the page is shared. 1200×630 is the safe size."
+        />
+
+        <TextField
+          id="seo_canonical"
+          label="Canonical URL"
+          type="text"
+          value={value.seo.canonicalUrl}
+          onChange={(e) => patchSeo({ canonicalUrl: e.target.value })}
+          maxLength={300}
+          placeholder="https://…"
+          help="Only needed when this page duplicates another one."
+        />
+
+        <CheckboxField
+          id="seo_noindex"
+          label="Hide from search engines"
+          checked={value.seo.noindex}
+          onChange={(checked) => patchSeo({ noindex: checked })}
+          help="Adds noindex. The page stays reachable by anyone with the link."
+        />
       </Panel>
 
       {picker && (
@@ -694,20 +1429,32 @@ export default function ServiceContentEditor({
   );
 }
 
-/** Collapsible card. Keeps a long form navigable without a separate tab bar. */
+/**
+ * Collapsible card, rendered only when its tab is the active one.
+ *
+ * Filtering here rather than wrapping each panel in a conditional at the call site
+ * keeps every panel at the same indentation and puts a panel's group next to its
+ * title. Nothing is lost by unmounting: the parent owns all of the values.
+ */
 function Panel({
+  group,
+  activeGroup,
   title,
   subtitle,
   isOpen,
   onToggle,
   children,
 }: {
+  group: TabId;
+  activeGroup: TabId;
   title: string;
   subtitle?: string;
   isOpen: boolean;
   onToggle: () => void;
   children: React.ReactNode;
 }) {
+  if (group !== activeGroup) return null;
+
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
       <button
@@ -725,6 +1472,105 @@ function Panel({
         />
       </button>
       {isOpen && <div className="space-y-5 border-t border-gray-100 px-6 py-5">{children}</div>}
+    </div>
+  );
+}
+
+/**
+ * Add / remove / reorder shell shared by every repeating list in this editor.
+ *
+ * Generic in the row type, so `blank` must be a *complete* row for the list it is
+ * appended to — the missing-`alt` class of bug cannot reach runtime.
+ *
+ * Reordering is up/down buttons only. There is deliberately no drag handle: the
+ * grip icon this file used to render was decorative, which is worse than no
+ * affordance at all because it invites a drag that silently does nothing.
+ */
+function Repeater<T>({
+  rows,
+  onRows,
+  blank,
+  label,
+  addLabel,
+  max,
+  children,
+}: {
+  rows: T[];
+  onRows: (rows: T[]) => void;
+  blank: T;
+  /** Singular row heading — "Card" renders "Card 1", and pluralises for the cap notice. */
+  label: string;
+  addLabel: string;
+  max: number;
+  children: (row: T, index: number, patch: (patch: Partial<T>) => void) => React.ReactNode;
+}) {
+  const move = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= rows.length) return;
+    const next = [...rows];
+    [next[index], next[target]] = [next[target], next[index]];
+    onRows(next);
+  };
+
+  const noun = label.toLowerCase();
+
+  return (
+    <div className="space-y-3">
+      {rows.map((row, i) => (
+        <div key={i} className="rounded-xl border border-gray-200 bg-gray-50/60 p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-500">
+              {label} {i + 1}
+            </span>
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => move(i, -1)}
+                disabled={i === 0}
+                className="rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-white disabled:opacity-30"
+                aria-label={`Move ${noun} ${i + 1} up`}
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                onClick={() => move(i, 1)}
+                disabled={i === rows.length - 1}
+                className="rounded-md px-2 py-1 text-xs text-gray-500 hover:bg-white disabled:opacity-30"
+                aria-label={`Move ${noun} ${i + 1} down`}
+              >
+                ↓
+              </button>
+              <button
+                type="button"
+                onClick={() => onRows(rows.filter((_, x) => x !== i))}
+                className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                aria-label={`Remove ${noun} ${i + 1}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {children(row, i, (patch) =>
+            onRows(rows.map((r, x) => (x === i ? { ...r, ...patch } : r)))
+          )}
+        </div>
+      ))}
+
+      <button
+        type="button"
+        disabled={rows.length >= max}
+        onClick={() => onRows([...rows, { ...blank }])}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 py-3 text-sm font-medium text-gray-600 hover:border-gray-400 hover:bg-gray-50 disabled:opacity-50"
+      >
+        <Plus className="h-4 w-4" /> {addLabel}
+      </button>
+      {rows.length >= max && (
+        <p className="text-xs text-amber-600">
+          Maximum of {max} {noun}s reached.
+        </p>
+      )}
     </div>
   );
 }

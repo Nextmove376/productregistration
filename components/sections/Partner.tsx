@@ -10,7 +10,7 @@ export default function Partner() {
             Set up your company with <em className="not-italic text-primary">Meydan Free Zone</em>.
           </h2>
           <p className="mt-6 max-w-lg text-muted-foreground">
-            Meydan Free Zone (MFZ) is an economic freezone in the heart of Dubai â€” near landmark commercial developments, hospitals, schools, and entertainment hubs. A prime environment for investors.
+            Meydan Free Zone (MFZ) is an economic freezone in the heart of Dubai — near landmark commercial developments, hospitals, schools, and entertainment hubs. A prime environment for investors.
           </p>
           <div className="mt-10 flex gap-3">
             <Link href="/contact" className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-ink-foreground transition hover:opacity-90">Free consultation</Link>

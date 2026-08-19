@@ -362,6 +362,61 @@ const MIGRATIONS: Migration[] = [
       await addIndex(db, 'media', 'idx_path', '`path`(191)');
     },
   },
+
+  {
+    name: '009_post_revisions',
+    up: async (db) => {
+      /**
+       * Snapshot history for posts, written immediately before every update.
+       *
+       * Widths mirror the `posts` DDL above exactly. That is the whole point of the
+       * table: a `VARCHAR(191)` here against a `VARCHAR(500)` there would truncate
+       * silently under a non-strict sql_mode, so the "backup" would quietly differ
+       * from what it claims to preserve.
+       *
+       * Two deliberate departures from `posts`:
+       *
+       * - `status` is VARCHAR(20), not the ENUM. `INSERT ... SELECT` into a narrower
+       *   ENUM fails the moment `posts` gains a fourth status, which would turn a
+       *   routine save into a 500. History must accept whatever `posts` currently
+       *   holds, not re-litigate it.
+       * - every snapshot column is nullable. A half-filled draft still deserves a
+       *   revision; NOT NULL here would reject it.
+       *
+       * No foreign key to `posts` on purpose. `posts` is soft-deleted, so revisions
+       * have to outlive a trashed post, and a hard purge must not silently take the
+       * history with it — `pruneRevisions`/explicit cleanup owns that decision.
+       */
+      await db.query(
+        `CREATE TABLE IF NOT EXISTS post_revisions (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            post_id INT NOT NULL,
+            revision_number INT NOT NULL,
+            title VARCHAR(300) DEFAULT NULL,
+            slug VARCHAR(200) DEFAULT NULL,
+            excerpt VARCHAR(500) DEFAULT NULL,
+            content LONGTEXT,
+            featured_image VARCHAR(500) DEFAULT NULL,
+            image_alt VARCHAR(200) DEFAULT NULL,
+            meta_title VARCHAR(200) DEFAULT NULL,
+            meta_description VARCHAR(300) DEFAULT NULL,
+            og_image VARCHAR(500) DEFAULT NULL,
+            canonical_url VARCHAR(500) DEFAULT NULL,
+            status VARCHAR(20) DEFAULT NULL,
+            noindex TINYINT DEFAULT 0,
+            category_id INT DEFAULT NULL,
+            author VARCHAR(100) DEFAULT NULL,
+            published_at DATETIME DEFAULT NULL,
+            edited_by_id INT DEFAULT NULL,
+            edited_by_email VARCHAR(255) DEFAULT NULL,
+            note VARCHAR(255) DEFAULT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uniq_post_revision (post_id, revision_number),
+            INDEX idx_post_created (post_id, created_at)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
+      );
+    },
+  },
 ];
 
 /* ------------------------------------------------------------------ *

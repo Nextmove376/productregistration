@@ -1,6 +1,7 @@
 import type { Pool, PoolConnection } from 'mysql2/promise';
 import pool from './db';
 import { clearSchemaCache } from './schema';
+import { reconcileStatements, resolveSettingsShape } from './settings-schema';
 import {
   BACKFILL_SPEC,
   BASE_TABLES,
@@ -40,6 +41,21 @@ export interface SchemaReport {
   rowCounts: Record<string, number>;
   /** Live probe of the queries that were failing, with the real driver message. */
   probes: { name: string; ok: boolean; error?: string }[];
+  /**
+   * What the `settings` table really looks like, and which columns the code resolved to.
+   *
+   * Reported because two separate production failures came from this one table having a
+   * shape nobody could see: no `key` column (errno 1072 when indexing it) and a string
+   * primary key under an unguessable name (`ER_DUP_ENTRY Duplicate entry ''`). Printing
+   * the actual column list turns the next surprise into a five-second diagnosis.
+   */
+  settings?: {
+    columns: string[];
+    keyColumn: string | null;
+    valueColumn: string | null;
+    typeColumn: string | null;
+    legacyKeyColumn: string | null;
+  };
   error?: string;
 }
 
@@ -184,6 +200,28 @@ export async function inspect(db: Runner = pool): Promise<SchemaReport> {
   ]);
 
   report.probes.sort((a, b) => Number(a.ok) - Number(b.ok));
+
+  // The settings table has produced two production incidents on its own, both because
+  // its real shape was invisible. Surface it directly instead of requiring a phpMyAdmin
+  // round trip to find out.
+  try {
+    const shape = await resolveSettingsShape();
+    const [rows] = await db.execute(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'settings'
+        ORDER BY ORDINAL_POSITION`
+    );
+    report.settings = {
+      columns: (rows as { COLUMN_NAME: string }[]).map((r) => r.COLUMN_NAME),
+      keyColumn: shape.keyColumn,
+      valueColumn: shape.valueColumn,
+      typeColumn: shape.typeColumn,
+      legacyKeyColumn: shape.legacyKeyColumn,
+    };
+  } catch {
+    // Non-fatal: the rest of the report is still useful.
+  }
+
   return report;
 }
 
@@ -260,6 +298,21 @@ export async function repair(db: Runner = pool): Promise<RepairReport> {
           WHERE (\`${target}\` IS NULL OR \`${target}\` = '') AND \`${source}\` IS NOT NULL`
       );
     }
+  }
+
+  // 3b. The same rescue for the one column the name list above could not guess.
+  //
+  // `BACKFILL_SPEC` is a list of plausible legacy names, and on this database none of
+  // them matched — the real one only surfaced as
+  // `ER_DUP_ENTRY Duplicate entry '' for key 'PRIMARY'` once saving started working.
+  // So this step does not guess: it reads the table's actual string primary key from
+  // `information_schema` and reconciles it with `key` in both directions, which both
+  // exposes settings stranded under the old name and repairs the empty primary key the
+  // duplicate-entry bug left behind.
+  clearSchemaCache(); // step 2 changed the shape; the resolver must not read a stale cache
+  const settingsShape = await resolveSettingsShape();
+  for (const sql of reconcileStatements(settingsShape)) {
+    await run(`settings.${settingsShape.legacyKeyColumn} <-> ${settingsShape.keyColumn}`, sql);
   }
 
   // 4. Types that must match what the app writes (short ENUMs, narrow VARCHARs).

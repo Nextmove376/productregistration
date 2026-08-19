@@ -3,6 +3,7 @@ import { z } from 'zod';
 import pool from '@/lib/db';
 import { checkCsrf, requireAdmin, requireEditor } from '@/lib/api-auth';
 import { logAudit } from '@/lib/audit';
+import { captureRevision } from '@/lib/revisions';
 import { revalidateBlog } from '@/lib/revalidate';
 import { sanitizePlainText, sanitizeRichText } from '@/lib/sanitize';
 import { logger } from '@/lib/logger';
@@ -120,6 +121,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         : null;
 
   try {
+    /**
+     * Snapshot the row before it is overwritten — awaited, deliberately not in
+     * `after()`.
+     *
+     * `after()` runs once the response has been sent, by which point the `UPDATE`
+     * below has already replaced the values the revision was meant to preserve.
+     * `captureRevision` swallows its own failures, so this cannot fail the save.
+     */
+    await captureRevision(id, { actor: session, note: 'autosaved before edit' });
+
     await pool.execute(
       `UPDATE posts SET
           title=?, slug=?, excerpt=?, content=?, featured_image=?, image_alt=?, category_id=?,

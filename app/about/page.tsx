@@ -17,7 +17,7 @@ const FEATURES = [
   {
     icon: Users,
     title: 'Expert PRO & Government Services',
-    desc: 'We manage all your public relations needs â€” visa applications, labor cards, trade licenses, and more â€” saving you time and effort.',
+    desc: 'We manage all your public relations needs — visa applications, labor cards, trade licenses, and more — saving you time and effort.',
   },
   {
     icon: Award,
@@ -28,11 +28,11 @@ const FEATURES = [
 
 const WHY_US = [
   'Direct relationships with MOHAP, Dubai Municipality, ESMA and MOIAT',
-  'Dedicated single-point advisor â€” no handoffs, no confusion',
+  'Dedicated single-point advisor — no handoffs, no confusion',
   'Transparent pricing with no surprise invoices',
   'Automatic renewal scheduling so you never miss a deadline',
   'Weekly progress updates tracked against your timeline',
-  'Free initial consultation â€” no obligation',
+  'Free initial consultation — no obligation',
 ];
 
 export default function AboutPage() {
@@ -72,10 +72,10 @@ export default function AboutPage() {
               Nextmove Services is a Dubai-based regulatory consultancy specialising in product registration, MOHAP approvals, and business setup in UAE. Since our founding, we have helped 500+ local and international brands navigate UAE compliance.
             </p>
             <p>
-              From Dubai Municipality product approvals and ESMA certifications to freezone company formation in SHAMS, Meydan, and SPC â€” we make the process fast, transparent, and stress-free.
+              From Dubai Municipality product approvals and ESMA certifications to freezone company formation in SHAMS, Meydan, and SPC — we make the process fast, transparent, and stress-free.
             </p>
             <p>
-              Based at Iliya Tower, Dubai, our team of regulatory experts is available Saturday to Thursday for a free consultation. We serve as your end-to-end regulatory partner â€” one file, one owner, zero handoffs.
+              Based at Iliya Tower, Dubai, our team of regulatory experts is available Saturday to Thursday for a free consultation. We serve as your end-to-end regulatory partner — one file, one owner, zero handoffs.
             </p>
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function AboutPage() {
               We always put your<br /><em className="text-[var(--teal-deep)]">interests first.</em>
             </h2>
             <p className="mt-6 max-w-md text-muted-foreground">
-              Driven by a relentless focus on &ldquo;why,&rdquo; we integrate our services to uncover, design, and deliver the most impactful outcomes for you. Instead of relying on predefined processes, we take a hands-on approach â€” collaborating closely with your teams to craft practical, end-to-end solutions tailored to your needs.
+              Driven by a relentless focus on &ldquo;why,&rdquo; we integrate our services to uncover, design, and deliver the most impactful outcomes for you. Instead of relying on predefined processes, we take a hands-on approach — collaborating closely with your teams to craft practical, end-to-end solutions tailored to your needs.
             </p>
             <div className="mt-10 flex flex-wrap gap-3">
               <Link href="/contact" className="rounded-full bg-[var(--navy)] px-6 py-3 text-sm text-[var(--cream)]">Free Consultation</Link>
@@ -158,9 +158,9 @@ export default function AboutPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {[
-            { title: 'Product Registration', desc: 'Cosmetics, food, supplements â€” Dubai Municipality & ESMA.', href: '/services/product-registration' },
+            { title: 'Product Registration', desc: 'Cosmetics, food, supplements — Dubai Municipality & ESMA.', href: '/services/product-registration' },
             { title: 'Medical Drugstore Setup', desc: 'Pharmacy license & MOHAP approvals.', href: '/services/medical-drugstore' },
-            { title: 'Business Setup', desc: 'Mainland & Freezone â€” SHAMS, Meydan, SPC formation.', href: '/services/business-setup' },
+            { title: 'Business Setup', desc: 'Mainland & Freezone — SHAMS, Meydan, SPC formation.', href: '/services/business-setup' },
             { title: 'MOFA Attestation', desc: 'Document legalization and PRO services.', href: '/services/mofa-attestation' },
           ].map((s) => (
             <Link key={s.title} href={s.href} className="group flex items-center justify-between rounded-2xl border border-border bg-[var(--cream)] p-6 transition-all hover:border-[var(--teal)]/40 hover:shadow-lg">
@@ -187,7 +187,7 @@ export default function AboutPage() {
             <div className="md:col-span-4">
               <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
                 <span className="font-serif text-lg">Book a free consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">â†’</span>
+                <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
               </Link>
               <div className="mt-6 space-y-1 text-sm text-[var(--cream)]/70">
                 <div>+971 52 910 2088</div>

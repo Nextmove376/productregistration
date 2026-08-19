@@ -22,6 +22,13 @@ interface SchemaReport {
   missingIndexes: string[];
   rowCounts: Record<string, number>;
   probes: { name: string; ok: boolean; error?: string }[];
+  settings?: {
+    columns: string[];
+    keyColumn: string | null;
+    valueColumn: string | null;
+    typeColumn: string | null;
+    legacyKeyColumn: string | null;
+  };
   error?: string;
 }
 
@@ -229,6 +236,38 @@ export default function DiagnosticsClient() {
             <DriftCard title="Missing indexes" items={report.missingIndexes} />
           </div>
 
+          {/*
+            The settings table has caused two separate production incidents on its own —
+            errno 1072 when indexing a `key` column that did not exist, then
+            ER_DUP_ENTRY on a string primary key under a name this codebase never used.
+            Both took a phpMyAdmin round trip to identify. Printing the real column list
+            here makes the next one self-evident.
+          */}
+          {report.settings ? (
+            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+              <header className="border-b border-gray-100 px-6 py-4">
+                <h2 className="text-sm font-semibold text-gray-900">Settings table shape</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Resolved at runtime, so a table older than this code still reads and writes.
+                </p>
+              </header>
+              <dl className="grid gap-px bg-gray-100 sm:grid-cols-2">
+                <ShapeRow label="Key column" value={report.settings.keyColumn} required />
+                <ShapeRow label="Value column" value={report.settings.valueColumn} required />
+                <ShapeRow label="Type column" value={report.settings.typeColumn} />
+                <ShapeRow label="Legacy primary key" value={report.settings.legacyKeyColumn} />
+              </dl>
+              <div className="border-t border-gray-100 px-6 py-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                  All columns ({report.settings.columns.length})
+                </p>
+                <p className="mt-1 break-words font-mono text-xs text-gray-600">
+                  {report.settings.columns.join(', ') || 'table not found'}
+                </p>
+              </div>
+            </section>
+          ) : null}
+
           {/* Row counts */}
           <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
             <header className="border-b border-gray-100 px-6 py-4">
@@ -284,6 +323,29 @@ export default function DiagnosticsClient() {
           ) : null}
         </div>
       )}
+    </div>
+  );
+}
+
+function ShapeRow({
+  label,
+  value,
+  required = false,
+}: {
+  label: string;
+  value: string | null;
+  required?: boolean;
+}) {
+  return (
+    <div className="bg-white px-6 py-3">
+      <dt className="text-xs uppercase tracking-wide text-gray-400">{label}</dt>
+      <dd
+        className={`mt-0.5 font-mono text-sm ${
+          value ? 'text-gray-900' : required ? 'text-red-600' : 'text-gray-400'
+        }`}
+      >
+        {value ?? (required ? 'not found — run Repair' : 'none')}
+      </dd>
     </div>
   );
 }

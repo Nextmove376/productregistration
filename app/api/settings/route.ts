@@ -12,7 +12,13 @@ import {
   invalidateSettingsCache,
   toColumnType,
 } from '@/lib/settings';
-import { presentColumns } from '@/lib/schema';
+import {
+  buildSettingsStatements,
+  insertParams,
+  reconcileStatements,
+  resolveSettingsShape,
+  updateParams,
+} from '@/lib/settings-schema';
 import { withSchemaHeal } from '@/lib/schema-repair';
 import { logger } from '@/lib/logger';
 import {
@@ -154,8 +160,8 @@ export async function PUT(request: NextRequest) {
 /**
  * Writes the validated settings inside one transaction.
  *
- * This is where "Could not save settings" came from, and there were two separate
- * causes — both consequences of the live table being older than the code:
+ * This is where "Could not save settings" came from, and there were three separate
+ * causes — all of them consequences of the live table being older than the code:
  *
  *  1. `settings.type` may not exist, or may be an ENUM that predates the `image` and
  *     `bool` members. Writing a value the ENUM does not list is errno 1265, not a
@@ -165,20 +171,49 @@ export async function PUT(request: NextRequest) {
  *     unique key on `key` to do anything useful. Without one it appends a second row
  *     for every save, so the reader keeps returning whichever row it happens to find.
  *     Existing keys are now read once up front and updated in place.
+ *  3. `ER_DUP_ENTRY Duplicate entry '' for key 'PRIMARY'` — the live table has a string
+ *     primary key under a name this codebase never used. Omitting it from the INSERT let
+ *     MySQL substitute `''`, so the first row saved and the second collided with it.
+ *     The column list now comes from `resolveSettingsShape()`, which discovers that
+ *     primary key from `information_schema` instead of guessing its name, and
+ *     `reconcileStatements()` repairs the row the bug already wrote.
  *
  * Kept as its own function so a heal-and-retry gets a fresh connection: DDL commits
  * implicitly in MySQL and must never run inside the transaction below.
  */
 async function writeSettings(entries: [string, unknown][]): Promise<Record<string, string>> {
-  const columns = await presentColumns('settings', ['key', 'value', 'type']);
-  const hasType = columns.includes('type');
+  const shape = await resolveSettingsShape();
+
+  if (!shape.usable || !shape.keyColumn || !shape.valueColumn) {
+    // Thrown rather than returned so `withSchemaHeal` sees a failure and repairs first.
+    const err = new Error(
+      'The settings table has no usable key/value columns. Open Admin → Diagnostics and click “Repair database”.'
+    ) as Error & { errno?: number };
+    err.errno = 1054; // classify as schema drift so the heal path picks it up
+    throw err;
+  }
+
+  const keyCol = `\`${shape.keyColumn}\``;
+
+  // Built once from the discovered shape, and shared with `scripts/test-settings.ts` so the
+  // statements the tests assert are literally the ones that run here.
+  const { insertSql, updateSql } = buildSettingsStatements(shape);
 
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    const [existingRows] = await conn.query('SELECT `key` FROM settings');
-    const existing = new Set((existingRows as { key: string }[]).map((r) => r.key));
+    // Bring `key` and the legacy primary key into agreement before writing anything:
+    // rescues settings stranded under the old name, and fills the empty primary key left
+    // behind by the duplicate-entry bug so the INSERTs below have nothing to collide with.
+    for (const sql of reconcileStatements(shape)) {
+      await conn.query(sql);
+    }
+
+    const [existingRows] = await conn.query(`SELECT ${keyCol} AS k FROM settings`);
+    const existing = new Set(
+      (existingRows as { k: string | null }[]).map((r) => r.k).filter((k): k is string => Boolean(k))
+    );
 
     const applied: Record<string, string> = {};
 
@@ -191,21 +226,12 @@ async function writeSettings(entries: [string, unknown][]): Promise<Record<strin
       if (def.type === 'text' || def.type === 'textarea') {
         value = sanitizePlainText(value);
       }
+      const columnType = toColumnType(def.type);
 
       if (existing.has(key)) {
-        await conn.execute(
-          hasType
-            ? 'UPDATE settings SET value = ?, type = ? WHERE `key` = ?'
-            : 'UPDATE settings SET value = ? WHERE `key` = ?',
-          hasType ? [value, toColumnType(def.type), key] : [value, key]
-        );
+        await conn.execute(updateSql, updateParams(shape, key, value, columnType));
       } else {
-        await conn.execute(
-          hasType
-            ? 'INSERT INTO settings (`key`, value, type) VALUES (?, ?, ?)'
-            : 'INSERT INTO settings (`key`, value) VALUES (?, ?)',
-          hasType ? [key, value, toColumnType(def.type)] : [key, value]
-        );
+        await conn.execute(insertSql, insertParams(shape, key, value, columnType));
         existing.add(key);
       }
 
@@ -216,6 +242,16 @@ async function writeSettings(entries: [string, unknown][]): Promise<Record<strin
     return applied;
   } catch (err) {
     await conn.rollback().catch(() => undefined);
+
+    // Name the cause rather than surfacing a raw driver string. A collision that survives
+    // the reconcile above means the table has a unique constraint the shape resolver did
+    // not account for, and the repair endpoint reports the full column list.
+    if ((err as { errno?: number }).errno === 1062) {
+      throw new Error(
+        'A settings row collides with an existing one. Open Admin → Diagnostics, click “Repair database”, then save again. ' +
+          `(${(err as { sqlMessage?: string }).sqlMessage ?? 'duplicate entry'})`
+      );
+    }
     throw err;
   } finally {
     conn.release();

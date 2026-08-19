@@ -20,6 +20,94 @@ import pool from './db';
  */
 
 const cache = new Map<string, Promise<Set<string>>>();
+const metaCache = new Map<string, Promise<Map<string, ColumnMeta>>>();
+
+/**
+ * What a column will accept, beyond merely existing.
+ *
+ * Knowing a column is *present* is not enough to write a row. `ER_DUP_ENTRY Duplicate
+ * entry '' for key 'PRIMARY'` came from exactly that gap: the live `settings` table
+ * carries a string PRIMARY KEY column this codebase never heard of, so every INSERT
+ * omitted it, MySQL substituted `''`, and the second save of any session collided with
+ * the first. An INSERT has to satisfy the table's real constraints, not the ones the
+ * code assumes.
+ */
+export interface ColumnMeta {
+  /** Real name, original case — use this when quoting into SQL. */
+  name: string;
+  nullable: boolean;
+  /** False for `NOT NULL` with no `DEFAULT`: the value must be supplied explicitly. */
+  hasDefault: boolean;
+  autoIncrement: boolean;
+  primaryKey: boolean;
+  /** `varchar`, `int`, `datetime`, … as reported by `information_schema`. */
+  dataType: string;
+}
+
+interface RawColumn {
+  COLUMN_NAME: string;
+  IS_NULLABLE: string;
+  COLUMN_DEFAULT: string | null;
+  EXTRA: string | null;
+  COLUMN_KEY: string | null;
+  DATA_TYPE: string;
+}
+
+/**
+ * Full column metadata for `table`, keyed by lowercased column name.
+ *
+ * Separate from `tableColumns` because most callers only need to know whether a column
+ * exists, and this is the heavier query.
+ */
+export function tableColumnMeta(table: string): Promise<Map<string, ColumnMeta>> {
+  const cached = metaCache.get(table);
+  if (cached) return cached;
+
+  const load = (async () => {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT, EXTRA, COLUMN_KEY, DATA_TYPE
+           FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+          ORDER BY ORDINAL_POSITION`,
+        [table]
+      );
+      const out = new Map<string, ColumnMeta>();
+      for (const r of rows as RawColumn[]) {
+        out.set(r.COLUMN_NAME.toLowerCase(), {
+          name: r.COLUMN_NAME,
+          nullable: r.IS_NULLABLE === 'YES',
+          // A generated default (CURRENT_TIMESTAMP) reports as DEFAULT_GENERATED in EXTRA
+          // while COLUMN_DEFAULT still carries the expression, so the null check covers it.
+          hasDefault: r.COLUMN_DEFAULT !== null,
+          autoIncrement: (r.EXTRA ?? '').toLowerCase().includes('auto_increment'),
+          primaryKey: r.COLUMN_KEY === 'PRI',
+          dataType: r.DATA_TYPE.toLowerCase(),
+        });
+      }
+      return out;
+    } catch {
+      metaCache.delete(table);
+      return new Map<string, ColumnMeta>();
+    }
+  })();
+
+  metaCache.set(table, load);
+  return load;
+}
+
+/** True for a type that holds text, so a key or a blank string is a valid value. */
+export function isTextType(dataType: string): boolean {
+  return /char|text|enum|set|blob|binary/.test(dataType);
+}
+
+export function isNumericType(dataType: string): boolean {
+  return /int|decimal|numeric|float|double|bit|year/.test(dataType);
+}
+
+export function isTemporalType(dataType: string): boolean {
+  return /date|time/.test(dataType);
+}
 
 /** Column names present on `table`, lowercased. Empty set if the table is missing. */
 export function tableColumns(table: string): Promise<Set<string>> {
@@ -49,6 +137,7 @@ export function tableColumns(table: string): Promise<Set<string>> {
 /** Forget everything — call after DDL so the next request sees the new shape. */
 export function clearSchemaCache(): void {
   cache.clear();
+  metaCache.clear();
 }
 
 export async function hasColumn(table: string, column: string): Promise<boolean> {

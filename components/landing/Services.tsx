@@ -2,10 +2,10 @@ import Link from 'next/link';
 
 const services = [
   { n: '01', title: 'MOHAP / EDE Registration', desc: 'Medical devices, medicines and pharmaceutical approvals.', img: '/images/svc-mohap.jpg', alt: 'Pharmaceutical packaging prepared for MOHAP registration in the UAE' },
-  { n: '02', title: 'Product Registration', desc: 'Cosmetics, food, supplements â€” Dubai Municipality & ESMA.', img: '/images/svc-product.jpg', alt: 'Cosmetic and supplement products prepared for Dubai Municipality registration' },
+  { n: '02', title: 'Product Registration', desc: 'Cosmetics, food, supplements — Dubai Municipality & ESMA.', img: '/images/svc-product.jpg', alt: 'Cosmetic and supplement products prepared for Dubai Municipality registration' },
   { n: '03', title: 'Regulatory Approvals', desc: 'Essential certifications and compliance audits.', img: '/images/svc-approvals.jpg', alt: 'Official UAE compliance certificate with a teal wax seal' },
   { n: '04', title: 'Government Services', desc: 'MOFA attestation, PRO services and paperwork done right.', img: '/images/svc-gov.jpg', alt: 'UAE government attestation paperwork and stamps on a desk' },
-  { n: '05', title: 'Business Setup', desc: 'Mainland, Freezone â€” SHAMS, Meydan, SPC formation.', img: '/images/svc-setup.jpg', alt: 'Modern Dubai freezone business centre building' },
+  { n: '05', title: 'Business Setup', desc: 'Mainland, Freezone — SHAMS, Meydan, SPC formation.', img: '/images/svc-setup.jpg', alt: 'Modern Dubai freezone business centre building' },
   { n: '06', title: 'Trademark & Drugstore', desc: 'UAE trademark registration and medical drugstore setup.', img: '/images/svc-trademark.jpg', alt: 'Shelves of medicines inside a licensed Dubai pharmacy' },
 ];
 
@@ -20,7 +20,7 @@ export default function Services() {
               Covering the full spectrum of product registration and business services.
             </h2>
           </div>
-          <Link href="/services" className="text-sm font-semibold text-primary hover:underline">Learn more â†’</Link>
+          <Link href="/services" className="text-sm font-semibold text-primary hover:underline">Learn more →</Link>
         </div>
 
         <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -45,7 +45,7 @@ export default function Services() {
                   <h3 className="text-lg font-semibold">{s.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
                   <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-primary">
-                    Learn more <span className="transition group-hover:translate-x-1">â†—</span>
+                    Learn more <span className="transition group-hover:translate-x-1">↗</span>
                   </span>
                 </div>
               </Link>

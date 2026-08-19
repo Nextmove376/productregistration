@@ -6,7 +6,7 @@ const tabs = [
   {
     id: 'story',
     title: 'Story',
-    content: 'Welcome to Next Move Services â€” your trusted partner for product registration in Dubai and business setup in UAE. We help businesses secure fast approvals for cosmetics, food items, health supplements, and more through Dubai Municipality.',
+    content: 'Welcome to Next Move Services — your trusted partner for product registration in Dubai and business setup in UAE. We help businesses secure fast approvals for cosmetics, food items, health supplements, and more through Dubai Municipality.',
   },
   {
     id: 'mission',

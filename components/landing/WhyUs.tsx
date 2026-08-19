@@ -64,13 +64,13 @@ export default function WhyUs() {
             </span>
           </h2>
           <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-            We&apos;re transparent like that. No gimmicks, no surprise invoices â€” just clear scopes, honest timelines, and a single owner on your file.
+            We&apos;re transparent like that. No gimmicks, no surprise invoices — just clear scopes, honest timelines, and a single owner on your file.
           </p>
           <Link
             href="/contact"
             className="mt-7 inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-ink-foreground shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
           >
-            Schedule a Call <span aria-hidden="true">â†’</span>
+            Schedule a Call <span aria-hidden="true">→</span>
           </Link>
         </div>
       </div>

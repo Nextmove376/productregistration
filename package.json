@@ -7,8 +7,16 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
+        "test": "npx tsx --test scripts/test-settings.ts scripts/test-service-content.ts scripts/test-revisions.ts",
+        "verify": "npm run encoding:check && npx tsc --noEmit && npm test",
+        "encoding:check": "npx tsx scripts/fix-mojibake.ts --check",
+        "encoding:fix": "npx tsx scripts/fix-mojibake.ts --write",
+        "encoding:db": "npx tsx scripts/fix-mojibake.ts --db",
         "db:migrate": "npx tsx scripts/migrate.ts",
+        "db:backup": "npx tsx scripts/backup-db.ts",
+        "db:backup:verify": "npx tsx scripts/backup-db.ts --verify",
         "db:seed": "npx tsx scripts/seed.ts",
+        "db:seed:services": "npx tsx scripts/seed-service-body.ts",
         "db:admin": "npx tsx scripts/create-admin.ts"
     },
     "dependencies": {

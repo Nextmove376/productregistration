@@ -1,5 +1,6 @@
 import pool from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { resolveSettingsShape } from '@/lib/settings-schema';
 
 /**
  * Settings registry.
@@ -104,17 +105,44 @@ interface CachedSettings {
 let cache: CachedSettings | null = null;
 const TTL_MS = 60 * 1000; // 60 seconds
 
+/**
+ * All settings, cached in-process for 60 seconds.
+ *
+ * The column names are resolved at runtime rather than written into the query. This used
+ * to be a literal `SELECT \`key\`, \`value\` FROM settings`, which failed with errno 1054
+ * on the live database — that table predates this project and stores its names under a
+ * different column. The failure was caught and the defaults returned, so every page
+ * rendered plausible values and nothing ever revealed that settings were not being read
+ * at all. Resolving the real columns is what makes the stored values visible.
+ */
 export async function getSettings(): Promise<Record<string, string>> {
   if (cache && Date.now() - cache.fetchedAt < TTL_MS) {
     return cache.data;
   }
 
   try {
-    const [rows] = await pool.execute('SELECT `key`, `value` FROM settings');
-    const settings: Record<string, string> = {};
-    for (const row of rows as any[]) {
-      settings[row.key] = row.value;
+    const shape = await resolveSettingsShape();
+    if (!shape.keyColumn || !shape.valueColumn) {
+      logger.error('settings.columns_unresolved', {
+        keyColumn: shape.keyColumn,
+        valueColumn: shape.valueColumn,
+      });
+      return cache?.data ?? {};
     }
+
+    const [rows] = await pool.query(
+      `SELECT \`${shape.keyColumn}\` AS k, \`${shape.valueColumn}\` AS v FROM settings`
+    );
+
+    const settings: Record<string, string> = {};
+    for (const row of rows as { k: string | null; v: string | null }[]) {
+      if (!row.k) continue;
+      // Duplicate rows are possible: an earlier version of the save path appended
+      // instead of updating. Prefer whichever copy actually holds a value.
+      if (settings[row.k] && !row.v) continue;
+      settings[row.k] = row.v ?? '';
+    }
+
     cache = { data: settings, fetchedAt: Date.now() };
     return settings;
   } catch (err) {

@@ -12,7 +12,13 @@ import FAQAccordion from '@/components/services/FAQAccordion';
 import RelatedServices from '@/components/services/RelatedServices';
 import StickyMobileCTA from '@/components/services/StickyMobileCTA';
 import pool from '@/lib/db';
-import { EMPTY_SERVICE_BODY, parseServiceBody, type ServiceBody } from '@/lib/service-content';
+import { hasColumn, softDeleteFilter } from '@/lib/schema';
+import {
+  EMPTY_SERVICE_BODY,
+  parseServiceBody,
+  resolveServiceContent,
+  type ServiceBody,
+} from '@/lib/service-content';
 
 export interface ProcessStep {
   step: number;
@@ -70,10 +76,24 @@ export interface ServicePageData {
 /**
  * Admin overrides for one of these pages.
  *
- * The six service pages under `app/services/<slug>/` are hand-authored for SEO,
- * so their long-form copy stays in the page file. What an editor needs to change
- * — hero background image or video, the "Our Services" cards, the logo strip —
- * lives in the `services.body` JSON column and is merged in here.
+ * The six service pages under `app/services/<slug>/` are hand-authored for SEO, so
+ * their long-form copy stays alongside the page in `<slug>/content.ts` as the
+ * built-in fallback. What an editor changes lives in the `services.body` JSON
+ * column and is merged in here by `resolveServiceContent`, which only lets
+ * non-empty admin content win.
+ *
+ * Two filters matter, and both are applied only when the column exists:
+ *
+ *  - `deleted_at IS NULL` — without it a soft-deleted row still overrode a live
+ *    page, so "deleting" a service in the admin silently kept editing the page it
+ *    was supposed to stop affecting.
+ *  - `is_active` — an editor unpublishing a service should not have its draft
+ *    content keep rendering.
+ *
+ * The column guards are not defensive padding: this deployment has repeatedly run
+ * ahead of its own migrations, and a hardcoded `deleted_at` here would throw
+ * errno 1054, get swallowed below, and silently disable admin content on all six
+ * pages at once.
  *
  * Deliberately fail-safe: a missing row, an unmigrated column or an unreachable
  * database yields the empty body and the page renders exactly as it did before.
@@ -82,8 +102,13 @@ export interface ServicePageData {
 async function getOverrides(slug: string): Promise<ServiceBody> {
   if (!slug) return EMPTY_SERVICE_BODY;
   try {
+    const notDeleted = await softDeleteFilter('services');
+    const activeOnly = (await hasColumn('services', 'is_active'))
+      ? ' AND (is_active IS NULL OR is_active = 1)'
+      : '';
+
     const [rows] = await pool.execute(
-      'SELECT body FROM services WHERE slug = ? LIMIT 1',
+      `SELECT body FROM services WHERE slug = ?${notDeleted}${activeOnly} LIMIT 1`,
       [slug]
     );
     const row = (rows as { body?: unknown }[])[0];
@@ -100,7 +125,7 @@ function slugFromCanonical(url: string): string {
 }
 
 export default async function ServicePageLayout({
-  data,
+  data: builtIn,
   slug,
 }: {
   data: ServicePageData;
@@ -108,7 +133,19 @@ export default async function ServicePageLayout({
   slug?: string;
 }) {
   const baseUrl = 'https://productregistrationinuae.com';
-  const body = await getOverrides(slug ?? slugFromCanonical(data.canonicalUrl));
+  const body = await getOverrides(slug ?? slugFromCanonical(builtIn.canonicalUrl));
+
+  /*
+   * Everything below reads `data`, so merging once here is what makes the whole
+   * page editable — process steps, required documents, pricing rows, the "why us"
+   * cards, the case study, the FAQ and the related-service links all now come from
+   * the admin when they have been filled in.
+   *
+   * The parameter is named `builtIn` so it is impossible to read the unmerged
+   * version by accident further down: there is no `data` in scope except the
+   * merged one.
+   */
+  const data = resolveServiceContent(builtIn, body);
 
   /*
    * The "Our Services" section. When an editor has added cards they win; until
@@ -127,10 +164,26 @@ export default async function ServicePageLayout({
             description: '',
             icon: '',
             imageUrl: '',
+            alt: '',
             href: '',
             badge: '',
           })),
   };
+
+  /*
+   * Stats and the closing CTA are not part of `ServicePageData`, so they are not
+   * covered by `resolveServiceContent` and fall back to their previous hardcoded
+   * values here instead. Same rule as everywhere else: admin content wins only
+   * when it is actually filled in.
+   */
+  const stats =
+    body.stats.length > 0
+      ? body.stats
+      : [
+          { value: '98%', label: 'Success Rate' },
+          { value: '500+', label: 'Products Registered' },
+          { value: '15+', label: 'Years Experience' },
+        ];
 
   // Generate Service Schema
   const serviceSchema = {
@@ -222,14 +275,21 @@ export default async function ServicePageLayout({
       {/* Logo strip: actually animated now, in full colour, and uniformly sized. */}
       <LogoTicker content={body.logos} />
 
-      {/* Stats. These previously shared a cramped row with the static logos. */}
+      {/*
+        Stats. These previously shared a cramped row with the static logos, and
+        were hardcoded here. Editable now, with the original three as the fallback
+        so a page nobody has edited renders exactly as before.
+      */}
       <section className="border-b border-border bg-[var(--cream)]">
         <div className="mx-auto max-w-7xl px-6 pb-10">
           <Reveal>
             <div className="flex flex-wrap items-center justify-center gap-10 text-center sm:gap-16">
-              <div><p className="text-2xl font-bold text-[var(--navy)]">98%</p><p className="text-xs text-muted-foreground">Success Rate</p></div>
-              <div><p className="text-2xl font-bold text-[var(--navy)]">500+</p><p className="text-xs text-muted-foreground">Products Registered</p></div>
-              <div><p className="text-2xl font-bold text-[var(--navy)]">15+</p><p className="text-xs text-muted-foreground">Years Experience</p></div>
+              {stats.map((stat, i) => (
+                <div key={`${stat.label}-${i}`}>
+                  <p className="text-2xl font-bold text-[var(--navy)]">{stat.value}</p>
+                  <p className="text-xs text-muted-foreground">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </Reveal>
         </div>
@@ -379,19 +439,43 @@ export default async function ServicePageLayout({
         </div>
       </section>
 
-      {/* Final CTA */}
+      {/*
+        Final CTA. The built-in headline is two styled lines rather than a string,
+        so an admin heading replaces it as plain text instead of trying to preserve
+        the line break and the emphasised second line \u2014 editable without letting
+        markup into the field.
+      */}
       <section className="relative overflow-hidden bg-[var(--navy)] text-[var(--cream)]">
         <div className="mx-auto max-w-7xl px-6 py-20 md:py-28">
           <div className="grid gap-12 md:grid-cols-12 md:items-end">
             <Reveal className="md:col-span-8">
               <h2 className="font-serif text-4xl leading-[1.02] md:text-6xl">
-                Ready to get started?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
+                {body.cta.heading !== '' ? (
+                  body.cta.heading
+                ) : (
+                  <>
+                    Ready to get started?<br /><em className="text-[var(--teal)]">Let&apos;s talk.</em>
+                  </>
+                )}
               </h2>
-              <p className="mt-4 max-w-lg text-[var(--cream)]/70">Book a free assessment. We&apos;ll review your requirements and provide a detailed timeline and quote within 24 hours.</p>
+              <p className="mt-4 max-w-lg text-[var(--cream)]/70">
+                {body.cta.body !== ''
+                  ? body.cta.body
+                  : "Book a free assessment. We'll review your requirements and provide a detailed timeline and quote within 24 hours."}
+              </p>
             </Reveal>
             <Reveal className="md:col-span-4" delay={120}>
-              <Link href={`/contact?service=${encodeURIComponent(data.serviceName)}`} className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
-                <span className="font-serif text-lg">Book Free Assessment</span>
+              <Link
+                href={
+                  body.cta.primaryHref !== ''
+                    ? body.cta.primaryHref
+                    : `/contact?service=${encodeURIComponent(data.serviceName)}`
+                }
+                className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]"
+              >
+                <span className="font-serif text-lg">
+                  {body.cta.primaryLabel !== '' ? body.cta.primaryLabel : 'Book Free Assessment'}
+                </span>
                 <span className="text-2xl transition-transform group-hover:translate-x-1">{'\u2192'}</span>
               </Link>
             </Reveal>

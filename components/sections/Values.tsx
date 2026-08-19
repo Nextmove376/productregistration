@@ -1,7 +1,7 @@
 const VALUES = [
   { k: 'Family-Rooted Integrity', v: 'Built on trust and genuine care. Every decision reflects what\'s right.' },
   { k: 'Entrepreneurial Empathy', v: 'We\'ve lived the founder journey and guide as we wish we\'d been guided.' },
-  { k: 'End-to-End Reliability', v: 'One-stop support. No confusion, no stress â€” just dependable execution.' },
+  { k: 'End-to-End Reliability', v: 'One-stop support. No confusion, no stress — just dependable execution.' },
   { k: 'Vision of Next Move', v: 'A lifelong partnership that grows with every stage of your success.' },
 ];
 

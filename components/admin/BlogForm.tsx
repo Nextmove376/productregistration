@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, AlertCircle, Eye, Code2, ImagePlus, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, AlertCircle, Eye, Code2, ImagePlus, X, Loader2, History } from 'lucide-react';
 import { api, ApiError } from '@/lib/client-api';
 import MediaPicker from '@/components/admin/MediaPicker';
 
@@ -29,6 +29,17 @@ export interface BlogFormValues {
 export interface Category {
   id: number;
   name: string;
+}
+
+/** The shape of one zod issue as the API serialises it. */
+interface ZodIssueLike {
+  path?: unknown;
+  message?: unknown;
+}
+
+/** Narrows the single-field error shape some handlers return instead of zod issues. */
+function isFieldError(value: unknown): value is { field: string } {
+  return typeof value === 'object' && value !== null && typeof (value as { field?: unknown }).field === 'string';
 }
 
 const EMPTY: BlogFormValues = {
@@ -67,12 +78,25 @@ function toMysqlDateTime(local: string): string {
   return local.replace('T', ' ') + (local.length === 16 ? ':00' : '');
 }
 
-function toDatetimeLocal(value: string): string {
-  if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+/**
+ * How old an autosaved draft is, in words.
+ *
+ * The age is the only evidence the editor has for deciding whether the draft or
+ * the saved post is the one they want, so it is worth stating plainly rather than
+ * printing a raw timestamp.
+ */
+function draftAge(savedAt: number | null): string {
+  if (!savedAt) return 'an earlier session';
+
+  const minutes = Math.floor((Date.now() - savedAt) / 60000);
+  if (minutes < 1) return 'moments ago';
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
 const LABEL = 'mb-1.5 block text-xs font-medium uppercase tracking-wider text-gray-500';
@@ -99,35 +123,88 @@ export default function BlogForm({
   const [draftRestored, setDraftRestored] = useState(false);
   const [autosavedAt, setAutosavedAt] = useState<Date | null>(null);
 
+  /**
+   * An unsaved draft found in storage that has NOT been applied to the form.
+   *
+   * Only used in `edit` mode, where the form already holds the saved post and
+   * applying a draft automatically would destroy it. Null means either there is
+   * no draft or the editor has already chosen what to do with it.
+   */
+  const [pendingDraft, setPendingDraft] = useState<{
+    form: Partial<BlogFormValues>;
+    savedAt: number | null;
+  } | null>(null);
+
   const draftKey = useMemo(() => `nm_blog_draft_${mode}_${initial?.id ?? 'new'}`, [mode, initial?.id]);
   const dirtyRef = useRef(false);
 
   const set = <K extends keyof BlogFormValues>(key: K, value: BlogFormValues[K]) => {
     dirtyRef.current = true;
+    // Once the editor starts typing, an unapplied draft offer is stale — the
+    // autosave below is about to overwrite the stored copy anyway, and leaving the
+    // banner up would offer to restore something that no longer exists.
+    setPendingDraft(null);
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   // Auto-generate the slug from the title until the user edits it themselves.
+  //
+  // This is a setState-in-effect, which the lint rule rightly flags in general. It
+  // stays because the slug is genuinely stored state, not derived: once the editor
+  // types in the slug field, `slugLocked` freezes whatever is there and the title
+  // stops driving it. Computing `slugify(title)` at render instead would need a
+  // second source of truth for the locked value and a matching change to the submit
+  // payload — more moving parts in a live form for one avoided re-render per keystroke.
   useEffect(() => {
     if (slugLocked) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- slug is stored state gated by slugLocked, not derived
     setForm((prev) => ({ ...prev, slug: slugify(prev.title) }));
   }, [form.title, slugLocked]);
 
-  /** Restore an unsaved draft from a previous session. */
+  /**
+   * Offer an unsaved draft from a previous session, rather than applying it.
+   *
+   * This used to call `setForm` unconditionally on mount, which silently
+   * overwrote the post that had just been loaded from the database with whatever
+   * happened to be in `localStorage` — even when the stored draft was older than
+   * the row. Anyone who edited the post from another browser, or whose earlier
+   * autosave predated a later save, lost the newer content on open with no
+   * indication it had happened.
+   *
+   * There is no reliable way to tell which side is newer: `BlogFormValues` carries
+   * no `updated_at`, so the two timestamps are not comparable. So the editor
+   * decides. In `create` mode the form starts empty and there is nothing to
+   * clobber, so restoring immediately is still the right behaviour.
+   *
+   * The setState here cannot be avoided: `localStorage` does not exist during
+   * server rendering, so seeding it through a `useState` initialiser would produce
+   * different markup on the server and the client and fail hydration. Reading it
+   * after mount is the only correct place.
+   */
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- see above: localStorage is client-only, so a useState initialiser would break hydration */
     try {
       const stored = window.localStorage.getItem(draftKey);
       if (!stored) return;
       const parsed = JSON.parse(stored);
-      if (parsed?.form) {
+      if (!parsed?.form) return;
+
+      if (mode === 'create') {
         setForm((prev) => ({ ...prev, ...parsed.form }));
         setDraftRestored(true);
         setSlugLocked(true);
+        return;
       }
+
+      setPendingDraft({
+        form: parsed.form as Partial<BlogFormValues>,
+        savedAt: typeof parsed.savedAt === 'number' ? parsed.savedAt : null,
+      });
     } catch {
       /* ignore corrupt draft */
     }
-  }, [draftKey]);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [draftKey, mode]);
 
   /** Autosave to localStorage so a crash or accidental navigation doesn't lose work. */
   useEffect(() => {
@@ -162,7 +239,20 @@ export default function BlogForm({
       /* ignore */
     }
     setDraftRestored(false);
+    setPendingDraft(null);
   }, [draftKey]);
+
+  /** Apply the offered draft over the loaded post, at the editor's explicit request. */
+  const acceptPendingDraft = useCallback(() => {
+    if (!pendingDraft) return;
+    setForm((prev) => ({ ...prev, ...pendingDraft.form }));
+    setSlugLocked(true);
+    setDraftRestored(true);
+    setPendingDraft(null);
+    // Restoring is itself an unsaved change: without this the beforeunload guard
+    // would let the editor navigate away and lose the content they just recovered.
+    dirtyRef.current = true;
+  }, [pendingDraft]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,15 +283,19 @@ export default function BlogForm({
       if (err instanceof ApiError) {
         setError(err.message);
         // Surface per-field messages from the zod issues the API returns.
-        const details = err.details as any;
+        //
+        // Typed as `unknown` and narrowed rather than cast to `any`: `err.details`
+        // is whatever the server chose to send, so every property access here has
+        // to be guarded anyway. A cast would only have hidden that from the reader.
+        const details: unknown = err.details;
         if (Array.isArray(details)) {
           const map: Record<string, string> = {};
-          for (const issue of details) {
+          for (const issue of details as ZodIssueLike[]) {
             const key = Array.isArray(issue.path) ? issue.path[0] : issue.path;
-            if (key) map[String(key)] = issue.message;
+            if (key) map[String(key)] = String(issue.message ?? 'Invalid value');
           }
           setFieldErrors(map);
-        } else if (details?.field) {
+        } else if (isFieldError(details)) {
           setFieldErrors({ [details.field]: err.message });
         }
       } else {
@@ -232,7 +326,55 @@ export default function BlogForm({
             Draft saved {autosavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         )}
+
+        {/*
+          The only entry point to revision history. Every save snapshots the previous
+          version, so without a link from here that history would exist in the database
+          and be unreachable from the UI — which is the same as not having it.
+        */}
+        {mode === 'edit' && initial?.id && (
+          <Link
+            href={`/admin/blog/${initial.id}/revisions`}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+          >
+            <History className="h-4 w-4" />
+            History
+          </Link>
+        )}
       </div>
+
+      {pendingDraft && (
+        <div
+          role="alert"
+          className="mb-6 flex flex-wrap items-start justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-amber-900">
+              You have unsaved changes to this post from {draftAge(pendingDraft.savedAt)}.
+            </p>
+            <p className="mt-1 text-sm text-amber-800">
+              The saved version is shown below. Restoring replaces it with your unsaved draft —
+              nothing is written until you save.
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={acceptPendingDraft}
+              className="rounded-lg bg-amber-900 px-3 py-2 text-sm font-medium text-white hover:bg-amber-800"
+            >
+              Restore draft
+            </button>
+            <button
+              type="button"
+              onClick={discardDraft}
+              className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
 
       {draftRestored && (
         <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-blue-200 bg-blue-50 p-4">

@@ -38,7 +38,7 @@ export default function ContactPage() {
       {/* Contact Cards + Form */}
       <section className="mx-auto max-w-7xl px-6 py-20 md:py-28">
         <div className="grid gap-12 lg:grid-cols-12">
-          {/* Left â€” Info Cards */}
+          {/* Left — Info Cards */}
           <div className="lg:col-span-5 space-y-6">
             {/* Address Card */}
             <div className="group rounded-3xl border border-border bg-[var(--cream)] p-7 transition-all hover:border-[var(--teal)]/40 hover:shadow-lg">
@@ -48,7 +48,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-serif text-lg">Office Address</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Iliya Tower 1, Office# 207, PB#234823, Dubai â€” UAE</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Iliya Tower 1, Office# 207, PB#234823, Dubai — UAE</p>
                   <a href="https://maps.app.goo.gl/NpXFyFhTDr2PPqy48" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--teal-deep)] hover:underline">
                     Get directions <ArrowUpRight className="h-3.5 w-3.5" />
                   </a>
@@ -100,14 +100,14 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-serif text-lg">Working Hours</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Saturday â€” Thursday: 8:30 AM â€” 5:30 PM</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Saturday — Thursday: 8:30 AM — 5:30 PM</p>
                   <p className="text-sm text-muted-foreground">Friday: Closed</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right â€” Contact Form */}
+          {/* Right — Contact Form */}
           <div className="lg:col-span-7">
             <div className="rounded-3xl border border-border bg-[var(--cream)] p-8 md:p-10">
               <div className="mb-8">
@@ -151,7 +151,7 @@ export default function ContactPage() {
                   <div>
                     <label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">Service needed</label>
                     <select className="w-full rounded-xl border border-border bg-white px-4 py-3.5 text-sm outline-none transition-colors focus:border-[var(--teal)]">
-                      <option value="">Choose a serviceâ€¦</option>
+                      <option value="">Choose a service…</option>
                       <option>MOHAP / EDE Registration</option>
                       <option>Product Registration</option>
                       <option>Regulatory Approvals</option>
@@ -162,7 +162,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">Your message</label>
-                    <textarea rows={4} placeholder="Tell us briefly about your projectâ€¦" className="w-full rounded-xl border border-border bg-white px-4 py-3.5 text-sm outline-none transition-colors focus:border-[var(--teal)]" />
+                    <textarea rows={4} placeholder="Tell us briefly about your project…" className="w-full rounded-xl border border-border bg-white px-4 py-3.5 text-sm outline-none transition-colors focus:border-[var(--teal)]" />
                   </div>
                   <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--navy)] py-4 text-sm font-medium text-[var(--cream)] transition-all hover:-translate-y-0.5 hover:shadow-lg">
                     <Send className="h-4 w-4" /> Send Message
@@ -183,7 +183,7 @@ export default function ContactPage() {
             <h2 className="mt-4 font-serif text-4xl leading-tight md:text-5xl">
               NextMove Services
             </h2>
-            <p className="mt-2 font-serif text-xl text-muted-foreground">Dubai â€” UAE</p>
+            <p className="mt-2 font-serif text-xl text-muted-foreground">Dubai — UAE</p>
             <p className="mt-4 max-w-md text-muted-foreground">
               Iliya Tower 1, Office#207, PB# 234823, Al Qusais Ind. Third, Dubai
             </p>
@@ -214,7 +214,7 @@ export default function ContactPage() {
             <div className="md:col-span-4">
               <Link href="/contact" className="group flex items-center justify-between rounded-full bg-[var(--teal)] px-8 py-5 text-[var(--navy)]">
                 <span className="font-serif text-lg">Get Consultation</span>
-                <span className="text-2xl transition-transform group-hover:translate-x-1">â†’</span>
+                <span className="text-2xl transition-transform group-hover:translate-x-1">→</span>
               </Link>
             </div>
           </div>

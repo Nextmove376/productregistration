@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 const TABS = {
-  story: 'Welcome to Next Move Services â€” your trusted partner for product registration in Dubai and business setup in the UAE. We help brands secure fast approvals for cosmetics, food, supplements and more, handling everything from label checks to CPRE submission and compliance.',
+  story: 'Welcome to Next Move Services — your trusted partner for product registration in Dubai and business setup in the UAE. We help brands secure fast approvals for cosmetics, food, supplements and more, handling everything from label checks to CPRE submission and compliance.',
   mission: 'Simplify business setup in the UAE and product registration in Dubai through end-to-end, reliable support across all regulatory processes. Remove complexity, reduce delays, empower companies to launch and grow.',
-  vision: 'Become the UAE\'s most trusted one-stop solution for business setup and product registration â€” driving client growth through expert guidance, fast approvals, and efficient compliance.',
+  vision: 'Become the UAE\'s most trusted one-stop solution for business setup and product registration — driving client growth through expert guidance, fast approvals, and efficient compliance.',
 };
 
 export default function About() {
