@@ -1,10 +1,9 @@
 import { unlink } from 'fs/promises';
-import { join, resolve, sep } from 'path';
+import { resolve, sep } from 'path';
 import pool from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { pathVariants, toPublicUrl, toStorageKey } from '@/lib/media-path';
-
-const UPLOAD_DIR = join(process.cwd(), 'uploads');
+import { UPLOAD_DIR } from '@/lib/upload-dir';
 
 export interface MediaRow {
   id: number;

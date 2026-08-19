@@ -22,6 +22,15 @@ interface SchemaReport {
   missingIndexes: string[];
   rowCounts: Record<string, number>;
   probes: { name: string; ok: boolean; error?: string }[];
+  uploads?: {
+    dir: string;
+    cwd: string;
+    exists: boolean;
+    writable: boolean;
+    fileCount: number;
+    insideBuildOutput: boolean;
+    error?: string;
+  };
   settings?: {
     columns: string[];
     keyColumn: string | null;
@@ -265,6 +274,53 @@ export default function DiagnosticsClient() {
                   {report.settings.columns.join(', ') || 'table not found'}
                 </p>
               </div>
+            </section>
+          ) : null}
+
+          {/*
+            Uploads location.
+            Broken images across the whole site traced back to this one value: with
+            `output: 'standalone'` Next's server.js chdirs into `.next/standalone`, so
+            uploads were being written inside build output and deleted by every deploy.
+            Printing the resolved path turns that from invisible to obvious.
+          */}
+          {report.uploads ? (
+            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+              <header className="border-b border-gray-100 px-6 py-4">
+                <h2 className="text-sm font-semibold text-gray-900">Uploads directory</h2>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Where <code className="font-mono">/api/media/…</code> reads and writes files.
+                </p>
+              </header>
+
+              {report.uploads.insideBuildOutput ? (
+                <p className="border-b border-red-100 bg-red-50 px-6 py-3 text-xs text-red-700">
+                  <strong>This path is inside <code className="font-mono">.next/</code>.</strong>{' '}
+                  That directory is rebuilt on every deploy, so every uploaded file will be
+                  deleted the next time the app is built. Set{' '}
+                  <code className="font-mono">UPLOAD_DIR_OVERRIDE</code> to a path outside the
+                  project.
+                </p>
+              ) : null}
+
+              <dl className="grid gap-px bg-gray-100 sm:grid-cols-2">
+                <ShapeRow label="Resolved path" value={report.uploads.dir} required />
+                <ShapeRow label="Working directory" value={report.uploads.cwd} />
+                <ShapeRow
+                  label="Directory exists"
+                  value={report.uploads.exists ? 'yes' : 'no — nothing can be served'}
+                  required
+                />
+                <ShapeRow
+                  label="Writable"
+                  value={report.uploads.writable ? 'yes' : 'no — uploads will fail'}
+                  required
+                />
+                <ShapeRow label="Files present" value={String(report.uploads.fileCount)} />
+                {report.uploads.error ? (
+                  <ShapeRow label="Read error" value={report.uploads.error} />
+                ) : null}
+              </dl>
             </section>
           ) : null}
 

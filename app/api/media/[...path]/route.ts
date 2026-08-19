@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createReadStream } from 'fs';
 import { readFile, stat } from 'fs/promises';
-import { join, extname, resolve, sep } from 'path';
+import { extname, resolve, sep } from 'path';
 import { sanitizeSvg } from '@/lib/sanitize';
 import { logger } from '@/lib/logger';
-
-const UPLOAD_DIR = join(process.cwd(), 'uploads');
+import { UPLOAD_DIR } from '@/lib/upload-dir';
 
 const MIME_MAP: Record<string, string> = {
   '.jpg': 'image/jpeg',

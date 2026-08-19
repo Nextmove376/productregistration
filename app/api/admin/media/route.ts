@@ -10,6 +10,7 @@ import { logger } from '@/lib/logger';
 import { getClientIp } from '@/lib/request-meta';
 import { getPagination, getSearch, paginatedResponse } from '@/lib/query-params';
 import { deleteMedia, restoreMedia, toMediaDto, type MediaRow } from '@/lib/media-service';
+import { UPLOAD_DIR, THUMBNAIL_DIR } from '@/lib/upload-dir';
 import { sanitizePlainText, sanitizeSvg } from '@/lib/sanitize';
 import {
   ALLOWED_TYPES,
@@ -32,8 +33,6 @@ import {
 } from '@/lib/http';
 
 export const dynamic = 'force-dynamic';
-
-const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
 function generateSeoFilename(originalName: string, ext: string): string {
   const baseName = originalName
@@ -64,13 +63,12 @@ async function createThumbnail(buffer: Buffer, mimeType: string, filename: strin
     if (mimeType === 'image/svg+xml' || mimeType === 'image/gif' || isVideoType(mimeType)) {
       return null;
     }
-    const thumbnailDir = join(UPLOAD_DIR, 'thumbnails');
-    await mkdir(thumbnailDir, { recursive: true });
+    await mkdir(THUMBNAIL_DIR, { recursive: true });
     const thumbnailFilename = `thumb-${filename}`;
     await sharp(buffer)
       .resize(300, 300, { fit: 'cover', position: 'center' })
       .jpeg({ quality: 80 })
-      .toFile(join(thumbnailDir, thumbnailFilename));
+      .toFile(join(THUMBNAIL_DIR, thumbnailFilename));
     return `thumbnails/${thumbnailFilename}`;
   } catch (err) {
     logger.warn('media.thumbnail_failed', { err, filename });
