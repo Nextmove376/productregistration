@@ -29,7 +29,11 @@ export type AuditAction =
   | 'password.change'
   // Database maintenance run from the admin diagnostics screen.
   | 'schema.repair'
-  | 'services.seed';
+  | 'services.seed'
+  | 'encoding.repair'
+  // A read, not a mutation — but it exports every row in the database, submissions
+  // included, so who took a copy and when is exactly what an audit trail is for.
+  | 'db.backup';
 
 export type AuditEntity =
   | 'post'
@@ -42,7 +46,9 @@ export type AuditEntity =
   | 'menu'
   | 'user'
   | 'session'
-  | 'schema';
+  | 'schema'
+  /** The database as a whole, for operations that are not scoped to one table. */
+  | 'database';
 
 export interface AuditInput {
   action: AuditAction;

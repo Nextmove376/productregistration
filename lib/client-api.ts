@@ -187,3 +187,79 @@ export const api = {
   delete: <T = any>(url: string, opts?: Omit<RequestOptions, 'method'>) =>
     apiRequest<T>(url, { ...opts, method: 'DELETE' }),
 };
+
+/* ------------------------------------------------------------------ *
+ * File downloads
+ * ------------------------------------------------------------------ */
+
+export interface DownloadResult {
+  filename: string;
+  bytes: number;
+  /** `X-…` response headers, so the caller can report on what it received. */
+  meta: Record<string, string>;
+}
+
+/**
+ * POSTs, then saves the response body as a file on the user's machine.
+ *
+ * `apiRequest` cannot do this: it reads every response as text and JSON-parses it,
+ * which is exactly wrong for a payload that is meant to be written to disk.
+ *
+ * `POST` rather than a plain link because the payloads that come through here are
+ * privileged (a full database dump, for one), and a `GET` URL is triggerable from any
+ * other site. Going through fetch also means the CSRF token and cookie handling stay
+ * identical to every other admin call, and a failure arrives as a readable `ApiError`
+ * instead of the browser silently saving an HTML error page as `backup.sql`.
+ */
+export async function apiDownload(url: string, body?: unknown): Promise<DownloadResult> {
+  const headers: Record<string, string> = {};
+  const csrf = readCsrfToken();
+  if (csrf) headers[CSRF_HEADER_NAME] = csrf;
+  headers['Content-Type'] = 'application/json';
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify(body ?? {}),
+    });
+  } catch {
+    throw new ApiError('Network error — check your connection and try again.', 0, 'NETWORK');
+  }
+
+  // On failure the body is a JSON error, so parse it the same way as everything else.
+  if (!res.ok) throw toError(await parseResponse(res), res);
+
+  const blob = await res.blob();
+
+  const meta: Record<string, string> = {};
+  res.headers.forEach((value, key) => {
+    if (key.toLowerCase().startsWith('x-')) meta[key.toLowerCase()] = value;
+  });
+
+  const filename =
+    res.headers.get('x-backup-filename') ??
+    /filename="?([^"]+)"?/.exec(res.headers.get('content-disposition') ?? '')?.[1] ??
+    'download';
+
+  // Anchor-click is the only way to name a client-side download. The object URL is
+  // revoked afterwards; leaving it alive pins the whole blob in memory, and a database
+  // dump is not a small blob.
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    // Deferred: revoking synchronously can cancel the download in some browsers.
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+  }
+
+  return { filename, bytes: blob.size, meta };
+}

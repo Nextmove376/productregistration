@@ -3,15 +3,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   AlertTriangle,
+  Archive,
   CheckCircle2,
   Database,
   Download,
   Loader2,
   RefreshCw,
+  Type,
   Wrench,
   XCircle,
 } from 'lucide-react';
-import { api, ApiError } from '@/lib/client-api';
+import { api, apiDownload, ApiError } from '@/lib/client-api';
 import { MediaToast, createToast, type ToastMessage } from '@/components/admin/MediaToast';
 
 interface SchemaReport {
@@ -47,6 +49,16 @@ interface RepairResult {
   report?: SchemaReport;
 }
 
+interface EncodingScan {
+  /** Rows the scan would change. `updated` is present instead once a fix has run. */
+  total?: number;
+  updated?: number;
+  tables: string[];
+  samples: string[];
+  skipped?: string[];
+  scanned?: number;
+}
+
 /**
  * Reads `/api/admin/schema` and renders the drift.
  *
@@ -60,8 +72,10 @@ interface RepairResult {
 export default function DiagnosticsClient() {
   const [report, setReport] = useState<SchemaReport | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<'repair' | 'seed' | null>(null);
+  const [busy, setBusy] = useState<'repair' | 'seed' | 'backup' | 'scan' | 'encfix' | null>(null);
   const [result, setResult] = useState<RepairResult | null>(null);
+  const [lastBackup, setLastBackup] = useState<string | null>(null);
+  const [encoding, setEncoding] = useState<EncodingScan | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = useCallback((type: 'success' | 'error', message: string) => {
@@ -72,8 +86,11 @@ export default function DiagnosticsClient() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  /**
+   * Fetches the report. Deliberately contains no *synchronous* setState, so it is safe
+   * to call straight from an effect — every state write here happens after an await.
+   */
+  const fetchReport = useCallback(async () => {
     try {
       setReport(await api.get<SchemaReport>('/api/admin/schema'));
     } catch (err) {
@@ -83,9 +100,19 @@ export default function DiagnosticsClient() {
     }
   }, [addToast]);
 
+  /** Manual re-check: unlike the initial load, this has to bring the skeleton back. */
+  const load = useCallback(async () => {
+    setLoading(true);
+    await fetchReport();
+  }, [fetchReport]);
+
   useEffect(() => {
-    load();
-  }, [load]);
+    // `loading` already starts as true, so the first fetch needs no synchronous state
+    // change to announce itself. eslint still flags this line — the rule is static and
+    // cannot see that every write in `fetchReport` happens after an await — so the
+    // warning is pre-existing and left standing rather than silenced with a disable.
+    fetchReport();
+  }, [fetchReport]);
 
   const runRepair = async () => {
     setBusy('repair');
@@ -125,6 +152,94 @@ export default function DiagnosticsClient() {
     }
   };
 
+  /**
+   * Downloads a full SQL dump to the operator's own machine.
+   *
+   * This exists because "back up before you change anything" was, on this host, a step
+   * that required a terminal nobody had. The server verifies the dump before sending
+   * it, so reaching this success path means the file is restorable — not merely that
+   * bytes arrived.
+   */
+  const runBackup = async () => {
+    setBusy('backup');
+    try {
+      const res = await apiDownload('/api/admin/backup');
+      const kb = (res.bytes / 1024).toFixed(1);
+      const summary =
+        `${res.filename} — ${res.meta['x-backup-tables'] ?? '?'} tables, ` +
+        `${res.meta['x-backup-rows'] ?? '?'} rows, ${kb} KB`;
+      setLastBackup(summary);
+      addToast('success', `Backup downloaded and verified: ${summary}`);
+    } catch (err) {
+      addToast('error', err instanceof ApiError ? err.message : 'Backup failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /**
+   * Reports which stored values still contain mojibake, changing nothing.
+   *
+   * Read-only on purpose. The corrupted characters — the three-byte runs that show up
+   * where an apostrophe, an arrow or a star should be — sit in live post bodies and
+   * service copy, and a blind find-and-replace across those columns is how you turn an
+   * encoding bug into missing content. So: look first, then approve.
+   *
+   * (Deliberately described rather than quoted: a literal example of the corruption in
+   * this file would be flagged by `npm run encoding:check`, which scans source too.)
+   */
+  const runEncodingScan = async () => {
+    setBusy('scan');
+    try {
+      const data = await api.post<EncodingScan>('/api/admin/schema', { action: 'encoding-scan' });
+      setEncoding(data);
+      addToast(
+        'success',
+        data.total === 0
+          ? `No corrupted characters found in ${data.scanned ?? 0} tables.`
+          : `${data.total} value(s) need repair across ${data.tables.length} table(s). Nothing changed yet.`
+      );
+    } catch (err) {
+      addToast('error', err instanceof ApiError ? err.message : 'Encoding check failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /**
+   * Applies the repair the scan previewed.
+   *
+   * The server re-runs the scan before writing rather than trusting a list sent from
+   * here, so the preview cannot act on stale values — and so this button can never be
+   * turned into an arbitrary UPDATE. Everything lands in one transaction.
+   */
+  const runEncodingFix = async () => {
+    if (
+      !window.confirm(
+        `Repair ${encoding?.total ?? 0} stored value(s)?\n\n` +
+          `This rewrites live content. Download a backup first if you have not already.`
+      )
+    ) {
+      return;
+    }
+
+    setBusy('encfix');
+    try {
+      const data = await api.post<EncodingScan>('/api/admin/schema', { action: 'encoding-fix' });
+      setEncoding(data);
+      addToast(
+        'success',
+        data.updated === 0
+          ? 'Nothing needed repair — the database is already clean.'
+          : `Repaired ${data.updated} value(s) in ${data.tables.length} table(s). Public pages refreshed.`
+      );
+    } catch (err) {
+      addToast('error', err instanceof ApiError ? err.message : 'Encoding repair failed');
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const failingProbes = report?.probes.filter((p) => !p.ok) ?? [];
   const driftCount =
     (report?.missingTables.length ?? 0) +
@@ -150,6 +265,29 @@ export default function DiagnosticsClient() {
             className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Re-check
+          </button>
+          {/*
+            Deliberately first among the action buttons, and to the left of Repair:
+            "back up before you change anything" only holds if the backup is the easier
+            click. Both other buttons run DDL.
+          */}
+          <button
+            onClick={runBackup}
+            disabled={busy !== null}
+            title="Downloads a full .sql dump of the database to this computer"
+            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {busy === 'backup' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
+            Download backup
+          </button>
+          <button
+            onClick={runEncodingScan}
+            disabled={busy !== null}
+            title="Reports stored text containing corrupted characters. Changes nothing."
+            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {busy === 'scan' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Type className="h-4 w-4" />}
+            Check encoding
           </button>
           <button
             onClick={runSeed}
@@ -212,6 +350,76 @@ export default function DiagnosticsClient() {
               </p>
             </div>
           </div>
+
+          {lastBackup ? (
+            <p className="rounded-2xl border border-gray-200 bg-white px-5 py-3 text-xs text-gray-600">
+              <span className="font-medium text-gray-900">Backup saved to this computer:</span>{' '}
+              <span className="font-mono">{lastBackup}</span>
+              <br />
+              Import it back through phpMyAdmin → Import if you ever need to restore.
+            </p>
+          ) : null}
+
+          {/*
+            Encoding results. Shown only after an explicit check, because a scan reads
+            every text column in the database and is not something to run on page load.
+          */}
+          {encoding ? (
+            <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+              <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <Type className="h-4 w-4 text-gray-400" />
+                  <h2 className="text-sm font-semibold text-gray-900">Character encoding</h2>
+                </div>
+                {/* The fix button appears only when there is something to fix. */}
+                {(encoding.total ?? 0) > 0 ? (
+                  <button
+                    onClick={runEncodingFix}
+                    disabled={busy !== null}
+                    className="flex items-center gap-2 rounded-xl bg-gray-900 px-3.5 py-2 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    {busy === 'encfix' ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Wrench className="h-3.5 w-3.5" />
+                    )}
+                    Repair {encoding.total} value{encoding.total === 1 ? '' : 's'}
+                  </button>
+                ) : null}
+              </header>
+
+              <div className="px-6 py-4">
+                <p className="text-sm text-gray-700">
+                  {encoding.updated !== undefined
+                    ? encoding.updated === 0
+                      ? 'Nothing needed repair.'
+                      : `Repaired ${encoding.updated} value(s) in ${encoding.tables.join(', ')}. Public pages have been refreshed.`
+                    : (encoding.total ?? 0) === 0
+                      ? `No corrupted characters in any of the ${encoding.scanned ?? 0} tables checked.`
+                      : `${encoding.total} value(s) in ${encoding.tables.join(', ')} contain corrupted characters. Nothing has been changed yet.`}
+                </p>
+
+                {encoding.samples.length > 0 ? (
+                  <div className="mt-3 max-h-64 overflow-auto rounded-xl bg-gray-50 p-3">
+                    <ul className="space-y-1.5">
+                      {encoding.samples.map((sample, i) => (
+                        <li key={i} className="font-mono text-[11px] leading-relaxed text-gray-600">
+                          {sample}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {encoding.skipped?.length ? (
+                  <p className="mt-3 text-xs text-gray-500">
+                    Not checked (no single-column primary key, so a row cannot be addressed
+                    safely): {encoding.skipped.join(', ')}
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
 
           {/* Live probes — the queries the admin screens actually run */}
           <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">

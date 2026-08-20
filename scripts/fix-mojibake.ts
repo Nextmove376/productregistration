@@ -23,6 +23,10 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import './test-env'; // placeholder DB credentials so a file-only run needs no .env
 import { findMojibake, fixMojibake } from '../lib/mojibake';
+// The database pass itself lives in `lib/` so the admin panel can run the same scan and
+// the same repair. Type-only import: erased at runtime, so a file-only run still never
+// loads the connection pool.
+import type { RowFinding } from '../lib/mojibake-db';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 
@@ -44,15 +48,6 @@ interface FileFinding {
   before: string;
   after: string;
   sequences: { broken: string; fixed: string }[];
-}
-
-interface RowFinding {
-  table: string;
-  pkColumn: string;
-  pkValue: string | number;
-  column: string;
-  before: string;
-  after: string;
 }
 
 /* ------------------------------------------------------------------ *
@@ -91,85 +86,20 @@ async function scanFiles(): Promise<FileFinding[]> {
  * Database
  * ------------------------------------------------------------------ */
 
-const TEXT_TYPES = ['char', 'varchar', 'tinytext', 'text', 'mediumtext', 'longtext'];
+/*
+ * Both of these now delegate to `lib/mojibake-db.ts`, so the CLI and the admin panel's
+ * "Check encoding" / "Fix encoding" buttons run byte-for-byte the same scan and the same
+ * transaction. Imported dynamically so a file-only run never loads the pool.
+ */
 
 async function scanDatabase(): Promise<{ findings: RowFinding[]; skipped: string[] }> {
-  const { default: pool } = await import('../lib/db');
-
-  const [columnRows] = await pool.query(
-    `SELECT TABLE_NAME, COLUMN_NAME, COLUMN_KEY, DATA_TYPE
-       FROM information_schema.COLUMNS
-      WHERE TABLE_SCHEMA = DATABASE()
-      ORDER BY TABLE_NAME, ORDINAL_POSITION`
-  );
-
-  const tables = new Map<string, { text: string[]; keys: string[] }>();
-  for (const row of columnRows as {
-    TABLE_NAME: string; COLUMN_NAME: string; COLUMN_KEY: string; DATA_TYPE: string;
-  }[]) {
-    const entry = tables.get(row.TABLE_NAME) ?? { text: [], keys: [] };
-    if (TEXT_TYPES.includes(row.DATA_TYPE.toLowerCase())) entry.text.push(row.COLUMN_NAME);
-    if (row.COLUMN_KEY === 'PRI') entry.keys.push(row.COLUMN_NAME);
-    tables.set(row.TABLE_NAME, entry);
-  }
-
-  const findings: RowFinding[] = [];
-  const skipped: string[] = [];
-
-  for (const [table, { text, keys }] of tables) {
-    if (text.length === 0) continue;
-    // A composite or absent primary key gives no safe way to address one row.
-    if (keys.length !== 1) {
-      skipped.push(`${table} (${keys.length === 0 ? 'no primary key' : 'composite primary key'})`);
-      continue;
-    }
-    const pk = keys[0];
-    const columnList = [pk, ...text.filter((c) => c !== pk)].map((c) => `\`${c}\``).join(', ');
-
-    const [rows] = await pool.query(`SELECT ${columnList} FROM \`${table}\``);
-    for (const row of rows as Record<string, unknown>[]) {
-      for (const column of text) {
-        const before = row[column];
-        if (typeof before !== 'string' || !before) continue;
-        const after = fixMojibake(before);
-        if (after === before) continue;
-        findings.push({
-          table,
-          pkColumn: pk,
-          pkValue: row[pk] as string | number,
-          column,
-          before,
-          after,
-        });
-      }
-    }
-  }
-
-  return { findings, skipped };
+  const { scanDatabaseMojibake } = await import('../lib/mojibake-db');
+  return scanDatabaseMojibake();
 }
 
 async function repairDatabase(findings: RowFinding[]): Promise<number> {
-  const { default: pool } = await import('../lib/db');
-  const conn = await pool.getConnection();
-  let updated = 0;
-  try {
-    // One transaction: either every row is repaired or none is.
-    await conn.beginTransaction();
-    for (const f of findings) {
-      await conn.execute(
-        `UPDATE \`${f.table}\` SET \`${f.column}\` = ? WHERE \`${f.pkColumn}\` = ?`,
-        [f.after, f.pkValue]
-      );
-      updated++;
-    }
-    await conn.commit();
-  } catch (err) {
-    await conn.rollback().catch(() => undefined);
-    throw err;
-  } finally {
-    conn.release();
-  }
-  return updated;
+  const { repairDatabaseMojibake } = await import('../lib/mojibake-db');
+  return repairDatabaseMojibake(findings);
 }
 
 /* ------------------------------------------------------------------ *

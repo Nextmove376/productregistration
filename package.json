@@ -7,7 +7,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
-        "test": "npx tsx --test scripts/test-settings.ts scripts/test-service-content.ts scripts/test-revisions.ts scripts/test-upload-dir.ts",
+        "test": "npx tsx --test scripts/test-settings.ts scripts/test-service-content.ts scripts/test-revisions.ts scripts/test-upload-dir.ts scripts/test-backup.ts",
         "verify": "npm run encoding:check && npx tsc --noEmit && npm test",
         "encoding:check": "npx tsx scripts/fix-mojibake.ts --check",
         "encoding:fix": "npx tsx scripts/fix-mojibake.ts --write",

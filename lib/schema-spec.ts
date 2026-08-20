@@ -238,6 +238,57 @@ export const BASE_TABLES: string[] = [
       name VARCHAR(128) UNIQUE NOT NULL,
       applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  /*
+   * Snapshot history for posts, written immediately before every update.
+   *
+   * Listed here, and not only in `scripts/migrate.ts`, so the "Repair database"
+   * button creates it. The alternative was pasting DDL into phpMyAdmin, which is
+   * how this table came to be missing in production in the first place — and the
+   * paste failed on an unrelated `information_schema` permission error, so it
+   * looked like the whole migration had failed when it had not.
+   *
+   * Column widths mirror `posts` exactly on purpose: a narrower column here would
+   * truncate silently under a non-strict sql_mode, so the "backup" would quietly
+   * differ from what it claims to preserve.
+   *
+   * `status` is VARCHAR(20) rather than the ENUM `posts` uses, because
+   * `INSERT ... SELECT` into a narrower ENUM would start failing the moment `posts`
+   * gains a fourth status — turning a routine save into a 500.
+   *
+   * Every snapshot column is nullable: a half-finished draft still deserves a
+   * revision, and NOT NULL here would reject it.
+   *
+   * There is deliberately no foreign key to `posts`. Posts are soft-deleted, so
+   * revisions must outlive a trashed post, and a hard purge must not silently take
+   * the history with it.
+   */
+  `CREATE TABLE IF NOT EXISTS post_revisions (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      post_id INT NOT NULL,
+      revision_number INT NOT NULL,
+      title VARCHAR(300) DEFAULT NULL,
+      slug VARCHAR(200) DEFAULT NULL,
+      excerpt VARCHAR(500) DEFAULT NULL,
+      content LONGTEXT,
+      featured_image VARCHAR(500) DEFAULT NULL,
+      image_alt VARCHAR(200) DEFAULT NULL,
+      meta_title VARCHAR(200) DEFAULT NULL,
+      meta_description VARCHAR(300) DEFAULT NULL,
+      og_image VARCHAR(500) DEFAULT NULL,
+      canonical_url VARCHAR(500) DEFAULT NULL,
+      status VARCHAR(20) DEFAULT NULL,
+      noindex TINYINT DEFAULT 0,
+      category_id INT DEFAULT NULL,
+      author VARCHAR(100) DEFAULT NULL,
+      published_at DATETIME DEFAULT NULL,
+      edited_by_id INT DEFAULT NULL,
+      edited_by_email VARCHAR(255) DEFAULT NULL,
+      note VARCHAR(255) DEFAULT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_post_revision (post_id, revision_number),
+      INDEX idx_post_created (post_id, created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 ];
 
 /**
@@ -463,6 +514,9 @@ export const INDEX_SPEC: [table: string, name: string, columns: string][] = [
   ['audit_log', 'idx_created', '`created_at`'],
   ['audit_log', 'idx_entity', '`entity`, `entity_id`'],
   ['menus', 'idx_location_sort', '`location`, `sort_order`'],
+  // Matches the two shapes `lib/revisions.ts` reads: history for one post, newest
+  // first, and the MAX(revision_number) lookup that assigns the next number.
+  ['post_revisions', 'idx_post_created', '`post_id`, `created_at`'],
 ];
 
 /**
@@ -478,6 +532,8 @@ export const UNIQUE_SPEC: [table: string, name: string, columns: string][] = [
   ['categories', 'uniq_category_slug', '`slug`'],
   ['admin_users', 'uniq_admin_email', '`email`'],
   ['schema_migrations', 'uniq_migration_name', '`name`'],
+  // Two writers racing on the same post must not produce two revision #4s.
+  ['post_revisions', 'uniq_post_revision', '`post_id`, `revision_number`'],
 ];
 
 /** Tables that carry `deleted_at`, i.e. participate in soft delete. */
