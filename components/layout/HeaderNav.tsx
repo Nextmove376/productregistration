@@ -94,8 +94,12 @@ export default function HeaderNav({ services, team }: HeaderNavProps) {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
         <Link href="/" className="flex items-center gap-2">
+          {/* Explicit intrinsic dimensions: without them the header had no height until
+              the logo decoded, so the whole page shifted down on first paint — a layout
+              shift on every route, on the element at the very top of the document.
+              `h-10 w-auto` still governs the rendered size. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/logo.png" alt="Nextmove Services" className="h-10 w-auto" />
+          <img src="/images/logo.png" alt="Nextmove Services" width={160} height={40} className="h-10 w-auto" />
         </Link>
 
         <nav ref={navRef} className="hidden items-center gap-1 text-sm text-muted-foreground md:flex">
@@ -213,7 +217,8 @@ export default function HeaderNav({ services, team }: HeaderNavProps) {
                       onClick={() => setMobileSection(mobileSection === item.label ? null : item.label)}
                       aria-expanded={mobileSection === item.label}
                       aria-label={`${item.label} submenu`}
-                      className="p-2 text-muted-foreground"
+                      // `p-2` around a 16px icon was only a 32px target.
+                      className="flex min-h-11 min-w-11 items-center justify-center p-2 text-muted-foreground"
                     >
                       <ChevronDown
                         className={`h-4 w-4 transition-transform duration-200 ${
@@ -229,7 +234,7 @@ export default function HeaderNav({ services, team }: HeaderNavProps) {
                           key={child.href}
                           href={child.href}
                           onClick={() => setMobileOpen(false)}
-                          className="rounded-lg py-2 pl-3 text-sm text-muted-foreground hover:text-foreground"
+                          className="rounded-lg py-3 pl-3 text-sm text-muted-foreground hover:text-foreground"
                         >
                           {child.label}
                         </Link>

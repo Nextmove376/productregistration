@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 const chips = ['Medical Devices', 'Drug Store Setup', 'Cosmetics', 'Health Supplements', 'Food Items', 'Freezone Formation'];
 
@@ -9,14 +10,24 @@ export default function Hero() {
 
   return (
     <section className="relative isolate overflow-hidden">
-      <img
+      {/*
+        The site's LCP element. It was a raw <img> with hardcoded width/height and no
+        `srcset`, so every phone downloaded the full 1920x1200 JPEG to paint it into a
+        ~390px-wide box — by far the largest avoidable payload on the landing page.
+
+        `fill` + `sizes="100vw"` lets the optimiser emit a full srcset and serve AVIF,
+        and because the parent is `relative` the box is still reserved by the section
+        itself, so nothing shifts. `preload` replaces the deprecated `priority` and
+        does what the old `fetchPriority="high"` was reaching for, but properly — it
+        emits a real `<link rel="preload">` for the derivative the viewport will use.
+      */}
+      <Image
         src="/images/hero-dubai.jpg"
         alt="Dubai skyline seen from a modern office at golden hour"
-        width={1920}
-        height={1200}
-        fetchPriority="high"
-        decoding="async"
-        className="absolute inset-0 -z-20 h-full w-full object-cover"
+        fill
+        preload
+        sizes="100vw"
+        className="-z-20 object-cover"
       />
       <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink/90 via-ink/70 to-ink/40" />
 

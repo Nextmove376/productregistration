@@ -36,10 +36,31 @@ const CSP = [
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  /*
+   * Image optimisation.
+   *
+   * `localPatterns` is deliberately NOT set. Omitting it allows every local path,
+   * which is what lets `next/image` optimise `/api/media/**` — the route the CMS
+   * serves uploads from. Adding a narrow `localPatterns` here would silently stop
+   * optimising every admin-uploaded image, so if one is ever added it must include
+   * `/api/media/**`.
+   *
+   * `qualities` must be listed explicitly: as of v16 it defaults to `[75]` only, and
+   * a request for a quality outside the list is rejected with a 400 rather than being
+   * clamped. `ServiceHero` asks for 85 and 80, so both are allowlisted alongside the
+   * default 75 — without this, those heroes would fail to load.
+   */
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'productregistrationinuae.com' },
     ],
+    // AVIF first, WebP as the fallback: roughly 20-30% smaller than WebP alone on
+    // photographic content, which is what the hero and blog featured images are.
+    formats: ['image/avif', 'image/webp'],
+    qualities: [75, 80, 85],
+    // 30 days. Uploads are content-addressed by filename, so a cached derivative can
+    // never go stale for a given URL — a replaced image gets a new filename.
+    minimumCacheTTL: 2592000,
   },
   async headers() {
     return [

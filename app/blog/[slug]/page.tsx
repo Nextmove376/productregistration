@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { after } from 'next/server';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { cache } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -127,8 +128,15 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
             >
               {'←'} Back to blog
             </Link>
-            <h1 className="text-4xl leading-[1.05] tracking-tight md:text-6xl">{post.title}</h1>
-            <div className="mt-6 flex items-center gap-4 text-sm text-[var(--cream)]/60">
+            {/* Titles run 60-80 characters, so at 48px in a 327px column they wrapped to
+                6-8 lines with 1.05 leading and the ascenders collided with the line above.
+                Mobile steps down to 2rem/1.1; the original sizes resume at `sm`. */}
+            <h1 className="text-[2rem] leading-tight tracking-tight sm:text-4xl sm:leading-[1.05] md:text-6xl">
+              {post.title}
+            </h1>
+            {/* Date + read time + author overflowed 327px once an author was present;
+                this wraps instead, with a tighter row gap so the wrap looks deliberate. */}
+            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--cream)]/60">
               {post.published_at && (
                 <time dateTime={new Date(post.published_at).toISOString()}>
                   {new Date(post.published_at).toLocaleDateString('en-US', {
@@ -146,17 +154,49 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
 
         {post.featured_image && (
           <div className="mx-auto -mt-8 max-w-4xl px-6">
-            <img
-              src={post.featured_image}
-              alt={post.image_alt || post.title}
-              className="w-full rounded-2xl shadow-lg"
-            />
+            {/*
+              This is the large-upload case (e.g. 1736x906). Three things were wrong with
+              the raw <img> that was here:
+
+                1. No width/height and no aspect ratio, so the browser reserved no space
+                   and the whole article jumped down when the image finally decoded —
+                   a large CLS contribution on the site's heaviest page.
+                2. No srcset, so a 360px phone downloaded the full-resolution original.
+                3. Nothing constrained the box, so an unusually tall upload could push
+                   the article text a screen and a half down.
+
+              `fill` inside a fixed `aspect-[16/9]` box fixes all three: the ratio
+              reserves the space before any bytes arrive (so it works whatever the
+              upload's real dimensions are, which the server cannot know here), and
+              `sizes` lets the optimiser hand a phone a ~360px derivative instead of
+              the original. `priority` is intentional — on an article page this image
+              is almost always the LCP element. `preload` — not `priority`, which v16
+              deprecated in favour of it.
+            */}
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl bg-[var(--sand)] shadow-lg">
+              <Image
+                src={post.featured_image}
+                alt={post.image_alt || post.title}
+                fill
+                preload
+                sizes="(max-width: 896px) 100vw, 848px"
+                className="object-cover"
+              />
+            </div>
           </div>
         )}
 
         <div className="mx-auto max-w-3xl px-6 py-16 md:py-24">
+          {/*
+            The body is editor-authored HTML rendered with dangerouslySetInnerHTML, so
+            its width is not under our control: one wide <table>, a long <pre>, or a
+            single unbroken URL widened the entire document and gave every page a
+            horizontal scrollbar (there is no global `overflow-x: hidden` to catch it).
+            `break-words` handles long tokens; the two child selectors let wide blocks
+            scroll inside themselves instead of stretching the page.
+          */}
           <div
-            className="prose prose-lg max-w-none prose-headings:font-display prose-headings:tracking-tight prose-a:text-[var(--teal-deep)] prose-a:no-underline hover:prose-a:underline"
+            className="prose prose-base max-w-none break-words prose-headings:font-display prose-headings:tracking-tight prose-a:text-[var(--teal-deep)] prose-a:no-underline hover:prose-a:underline prose-pre:overflow-x-auto prose-table:block prose-table:overflow-x-auto sm:prose-lg"
             dangerouslySetInnerHTML={{ __html: safeContent }}
           />
         </div>
@@ -164,17 +204,19 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
 
       {related.length > 0 && (
         <section className="border-t border-border bg-[var(--cream)]">
-          <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+          <div className="mx-auto max-w-7xl px-6 py-14 md:py-32">
             <h2 className="font-serif text-3xl">Related articles</h2>
             <div className="mt-12 grid gap-8 md:grid-cols-3">
               {related.map((r) => (
                 <Link key={r.slug} href={`/blog/${r.slug}`} className="group">
                   {r.featured_image && (
-                    <div className="aspect-[16/10] overflow-hidden rounded-2xl bg-[var(--sand)]">
-                      <img
+                    <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-[var(--sand)]">
+                      <Image
                         src={r.featured_image}
                         alt={r.image_alt || r.title}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        className="object-cover transition-transform group-hover:scale-105"
                       />
                     </div>
                   )}
@@ -197,7 +239,7 @@ export default async function BlogPostPage({ params }: BlogPostProps) {
         <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
           <div className="grid gap-12 md:grid-cols-12 md:items-end">
             <div className="md:col-span-8">
-              <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
+              <h2 className="font-serif text-4xl leading-tight sm:text-5xl sm:leading-[1.02] md:text-7xl">
                 Have questions?
                 <br />
                 <em className="text-[var(--teal)]">Let&apos;s talk.</em>

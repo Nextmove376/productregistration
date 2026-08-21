@@ -152,7 +152,7 @@ export default async function ServicePage({ params }: { params: Promise<{ slug: 
           <Reveal>
             <div className="grid gap-12 md:grid-cols-12 md:items-end">
               <div className="md:col-span-8">
-                <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
+                <h2 className="font-serif text-4xl leading-tight sm:text-5xl sm:leading-[1.02] md:text-7xl">
                   Ready to start?<br />
                   <em className="text-[var(--teal)]">Let&apos;s talk.</em>
                 </h2>

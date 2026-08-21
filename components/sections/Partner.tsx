@@ -12,7 +12,10 @@ export default function Partner() {
           <p className="mt-6 max-w-lg text-muted-foreground">
             Meydan Free Zone (MFZ) is an economic freezone in the heart of Dubai — near landmark commercial developments, hospitals, schools, and entertainment hubs. A prime environment for investors.
           </p>
-          <div className="mt-10 flex gap-3">
+          {/* Two ~176px pills need 364px; a 375px phone offers 327px, and without
+              `flex-wrap` they both shrank and broke their labels across two lines.
+              `app/about/page.tsx` already had this right. */}
+          <div className="mt-10 flex flex-wrap gap-3">
             <Link href="/contact" className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-ink-foreground transition hover:opacity-90">Free consultation</Link>
             <Link href="/services/business-setup" className="rounded-full border border-border px-6 py-3 text-sm font-semibold transition hover:bg-secondary">Compare freezones</Link>
           </div>

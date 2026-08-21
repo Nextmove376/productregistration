@@ -47,7 +47,7 @@ export default function AboutPage() {
           <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> who we are
           </div>
-          <h1 className="text-5xl leading-[1.02] tracking-tight md:text-[5.5rem]">
+          <h1 className="text-[2rem] leading-tight tracking-tight sm:text-5xl sm:leading-[1.02] md:text-[5.5rem]">
             Efficient product registration<br />
             <span className="italic text-[var(--teal)]/90">& company formation</span><br />
             <span className="text-[var(--cream)]/70">you can trust in UAE.</span>
@@ -180,7 +180,7 @@ export default function AboutPage() {
           <div className="grid gap-12 md:grid-cols-12 md:items-end">
             <div className="md:col-span-8">
               <div className="text-xs uppercase tracking-[0.25em] text-[var(--teal)]">Next step</div>
-              <h2 className="mt-4 font-serif text-5xl leading-[1.02] md:text-7xl">
+              <h2 className="mt-4 font-serif text-4xl leading-tight sm:text-5xl sm:leading-[1.02] md:text-7xl">
                 Ready to make the<br /><em className="text-[var(--teal)]">next move?</em>
               </h2>
             </div>

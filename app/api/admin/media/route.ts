@@ -193,6 +193,22 @@ export async function POST(request: NextRequest) {
     const results: unknown[] = [];
     const errors: { filename: string; error: string }[] = [];
 
+    /*
+     * Derivative work queued for after the response is sent.
+     *
+     * Generating a thumbnail and a blur placeholder are two full sharp decode/encode
+     * passes per file. On a 1736x906 photo that is the dominant cost of the request,
+     * and with up to MAX_FILES_PER_REQUEST files it was serialised inside the loop —
+     * so the admin's upload button stayed spinning for the sum of all of them.
+     *
+     * Neither derivative is needed for the row to be usable: `toMediaDto` falls back
+     * to the original when `thumbnail_path` is null, which is what the media grid
+     * already renders (`m.thumbnail_path || m.path`). So the file write and the INSERT
+     * stay inline — the row must exist before we answer — and only these two passes
+     * are deferred, then written back with an UPDATE.
+     */
+    const derived: { id: number; buffer: Buffer; mimeType: string; filename: string }[] = [];
+
     await mkdir(UPLOAD_DIR, { recursive: true });
 
     for (let i = 0; i < files.length; i++) {
@@ -230,6 +246,9 @@ export async function POST(request: NextRequest) {
         buffer = Buffer.from(cleaned, 'utf8');
       }
 
+      // Cheap: reads the image header only, no decode. Stays inline because `width`
+      // and `height` are what let the front end reserve space and avoid layout shift,
+      // so the row is not useful without them.
       const { width, height } = await getImageMetadata(buffer, file.type);
       const ext = ALLOWED_TYPES[file.type][0];
       const filename = generateSeoFilename(file.name, ext);
@@ -237,14 +256,10 @@ export async function POST(request: NextRequest) {
 
       await writeFile(join(UPLOAD_DIR, filename), buffer);
 
-      const [thumbnailRelPath, blurData] = await Promise.all([
-        createThumbnail(buffer, file.type, filename),
-        createBlurData(buffer, file.type),
-      ]);
-
+      // Inserted with both derivatives NULL; the deferred pass below fills them in.
       const [result] = await pool.execute(
         `INSERT INTO media (filename, path, alt, width, height, size_bytes, mime_type, thumbnail_path, blur_data)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL)`,
         [
           file.name.slice(0, 255),
           storagePath,
@@ -253,12 +268,12 @@ export async function POST(request: NextRequest) {
           height,
           buffer.byteLength,
           file.type,
-          thumbnailRelPath,
-          blurData,
         ]
       );
 
       const id = (result as any).insertId as number;
+      derived.push({ id, buffer, mimeType: file.type, filename });
+
       results.push(
         toMediaDto({
           id,
@@ -269,8 +284,8 @@ export async function POST(request: NextRequest) {
           height,
           size_bytes: buffer.byteLength,
           mime_type: file.type,
-          thumbnail_path: thumbnailRelPath,
-          blur_data: blurData,
+          thumbnail_path: null,
+          blur_data: null,
           uploaded_at: new Date().toISOString(),
           deleted_at: null,
         })
@@ -286,6 +301,35 @@ export async function POST(request: NextRequest) {
           request,
         })
       );
+    }
+
+    if (derived.length > 0) {
+      /*
+       * Runs after the response has been flushed, so the admin's upload completes as
+       * soon as the bytes are on disk and the rows exist.
+       *
+       * Each file is handled in its own try/catch: one corrupt image must not cost the
+       * others their thumbnails. A failure here is logged and left as it is — the row
+       * keeps `thumbnail_path = NULL` and the grid falls back to the original file, so
+       * the worst outcome is a heavier thumbnail, never a broken or missing image.
+       */
+      after(async () => {
+        for (const item of derived) {
+          try {
+            const [thumbnailRelPath, blurData] = await Promise.all([
+              createThumbnail(item.buffer, item.mimeType, item.filename),
+              createBlurData(item.buffer, item.mimeType),
+            ]);
+
+            await pool.execute(
+              `UPDATE media SET thumbnail_path = ?, blur_data = ? WHERE id = ?`,
+              [thumbnailRelPath, blurData, item.id]
+            );
+          } catch (err) {
+            logger.error('media.derive_failed', { err, mediaId: item.id });
+          }
+        }
+      });
     }
 
     return ok({

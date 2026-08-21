@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 const services = [
   { n: '01', title: 'MOHAP / EDE Registration', desc: 'Medical devices, medicines and pharmaceutical approvals.', img: '/images/svc-mohap.jpg', alt: 'Pharmaceutical packaging prepared for MOHAP registration in the UAE' },
@@ -28,14 +29,16 @@ export default function Services() {
             <li key={s.n}>
               <Link href="/services" className="group block h-full overflow-hidden rounded-3xl border border-border/70 bg-card shadow-[var(--shadow-soft)] transition duration-300 hover:-translate-y-1.5">
                 <div className="relative aspect-[4/3] overflow-hidden">
-                  <img
+                  {/* Six cards, each shipping an 800px file into a ~330px mobile card.
+                      The parent already fixes the ratio, so `fill` + `sizes` adds a
+                      srcset without changing the layout at all. */}
+                  <Image
                     src={s.img}
                     alt={s.alt}
-                    width={800}
-                    height={600}
+                    fill
                     loading="lazy"
-                    decoding="async"
-                    className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-cover transition duration-500 group-hover:scale-105"
                   />
                   <span className="absolute left-4 top-4 rounded-full bg-ink/80 px-2.5 py-1 text-[11px] font-semibold text-ink-foreground backdrop-blur-sm">
                     {s.n}

@@ -297,7 +297,11 @@ export default function OurServices({ content }: { content: OurServicesContent }
   const heading = content.heading || 'Our services';
 
   return (
-    <section className="border-t border-border bg-background">
+    /* `overflow-x-hidden` contains the entry animation. `Reveal` slides each full-width
+       FeatureRow in with `translate3d(24px, 0, 0)`, and with nothing clipping it — there
+       is no global `overflow-x` guard in globals.css — every odd row added 24px to the
+       document width, so the page had a horizontal scrollbar until it finished revealing. */
+    <section className="overflow-x-hidden border-t border-border bg-background">
       <div className="mx-auto max-w-7xl px-6 py-24 md:py-32">
         <Reveal>
           <div className="mb-14 max-w-2xl">

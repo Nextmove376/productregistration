@@ -20,16 +20,21 @@ export default function WhatsAppWidget() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    // `bottom-24` on mobile: this 56px button was sitting on top of the service pages'
+    // `fixed bottom-0` StickyMobileCTA, covering its "Get Quote" target. See the same
+    // fix in PhoneWidget. Desktop has no sticky bar, so `bottom-6` resumes at `md`.
+    <div className="fixed bottom-24 right-6 z-50 md:bottom-6">
       {isOpen && (
-        <div className="bg-white rounded-2xl shadow-2xl mb-4 w-80 overflow-hidden border border-gray-100">
+        // Was a hard `w-80`; combined with `right-6` that overflowed a 320px viewport.
+        <div className="bg-white rounded-2xl shadow-2xl mb-4 w-[calc(100vw-3rem)] max-w-80 overflow-hidden border border-gray-100">
           <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4">
             <div className="flex justify-between items-center">
               <div>
                 <h3 className="font-bold text-lg">Chat with us</h3>
                 <p className="text-green-100 text-xs">Typically replies within minutes</p>
               </div>
-              <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-green-700 rounded-full transition-colors" aria-label="Close chat">
+              {/* `p-1` + a 20px icon was a 28px target; 44px is the minimum. */}
+              <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-green-700 rounded-full transition-colors" aria-label="Close chat">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -45,7 +50,13 @@ export default function WhatsAppWidget() {
                 className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl transition-colors group"
               >
                 <div className="relative">
-                  <img src={agent.photo_url} alt={agent.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-green-100" />
+                  {/* Explicit dimensions so the 48px avatar reserves its box before the
+                      SVG loads; without them the whole row reflowed on open. Kept as a
+                      raw <img> deliberately — these are SVGs, and routing SVG through
+                      the image optimiser needs `dangerouslyAllowSVG`, which is not a
+                      switch worth throwing for three 48px avatars. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={agent.photo_url} alt={agent.name} width={48} height={48} className="w-12 h-12 rounded-full object-cover ring-2 ring-green-100" />
                   <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white" />
                 </div>
                 <div className="flex-1">
@@ -66,7 +77,8 @@ export default function WhatsAppWidget() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-all hover:scale-110 relative"
-        aria-label="Open WhatsApp chat"
+        aria-label={isOpen ? 'Close WhatsApp chat' : 'Open WhatsApp chat'}
+        aria-expanded={isOpen}
       >
         <MessageCircle className="w-6 h-6" />
         {!isOpen && (

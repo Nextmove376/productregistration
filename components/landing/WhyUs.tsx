@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const words = ["You're Getting", "What It Builds", "The Next Step"];
 
@@ -37,15 +38,20 @@ export default function WhyUs() {
 
   return (
     <section className="relative isolate overflow-hidden py-20" aria-labelledby="why-us-heading">
-      <img
+      {/*
+        `sizes="100vw"` was here already but was inert: `sizes` only does anything
+        alongside a `srcset`, and a plain <img> has none — so every visitor got the full
+        1920x1088 JPEG regardless. Moving to `next/image` is what makes that `sizes`
+        real. Stays lazy: this section is below the fold, so it must not compete with
+        the hero for bandwidth.
+      */}
+      <Image
         src="/images/why-us.jpg"
         alt="Consultant advising a client about UAE product registration in a Dubai office"
-        width={1920}
-        height={1088}
+        fill
         loading="lazy"
-        decoding="async"
         sizes="100vw"
-        className="absolute inset-0 -z-20 h-full w-full object-cover"
+        className="-z-20 object-cover"
       />
       <div className="absolute inset-0 -z-10 bg-linear-to-r from-ink/60 via-ink/25 to-transparent" />
 

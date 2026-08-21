@@ -6,7 +6,9 @@ export default function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-5 py-14 md:grid-cols-4">
         <div>
           <Link href="/" className="flex items-center gap-2">
-            <img src="/images/logo.png" alt="Nextmove Services" className="h-9 w-auto brightness-0 invert" />
+            {/* Dimensions given so the footer column does not reflow on first paint. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/images/logo.png" alt="Nextmove Services" width={144} height={36} className="h-9 w-auto brightness-0 invert" />
           </Link>
           <p className="mt-4 max-w-xs text-sm">From idea to official {'\u2014'} simple. UAE product registration and business setup.</p>
         </div>

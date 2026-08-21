@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import pool from '@/lib/db';
@@ -34,14 +35,14 @@ export default async function BlogPage() {
           <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> insights
           </div>
-          <h1 className="text-5xl leading-[1.02] tracking-tight md:text-[6rem]">
+          <h1 className="text-[2rem] leading-tight tracking-tight sm:text-5xl sm:leading-[1.02] md:text-[6rem]">
             Hear directly from<br />
             <span className="italic text-[var(--teal)]/90">our experts.</span>
           </h1>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-24 md:py-32">
+      <section className="mx-auto max-w-7xl px-6 py-14 md:py-32">
         {posts.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-lg text-muted-foreground">No posts yet. Check back soon!</p>
@@ -55,12 +56,22 @@ export default async function BlogPage() {
                 className="group overflow-hidden rounded-3xl border border-border transition-all hover:border-[var(--teal)]/40 hover:shadow-lg"
               >
                 {post.featured_image && (
-                  <div className="aspect-[16/10] overflow-hidden bg-[var(--sand)]">
-                    <img src={post.featured_image} alt={post.image_alt || post.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
+                  <div className="relative aspect-[16/10] overflow-hidden bg-[var(--sand)]">
+                    {/* Admin uploads, so these can be full-resolution originals served
+                        into a ~380px card. `fill` inside the existing fixed ratio plus
+                        `sizes` gets the optimiser to hand over a card-sized derivative. */}
+                    <Image
+                      src={post.featured_image}
+                      alt={post.image_alt || post.title}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover transition-transform group-hover:scale-105"
+                    />
                   </div>
                 )}
                 <div className="p-6">
-                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  {/* Date and read time overflowed a narrow card once both were present. */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                     {post.published_at && (
                       <span>{new Date(post.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     )}

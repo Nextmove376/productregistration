@@ -134,7 +134,7 @@ export default async function ServicesPage() {
           <Reveal>
             <div className="grid gap-12 md:grid-cols-12 md:items-end">
               <div className="md:col-span-8">
-                <h2 className="font-serif text-5xl leading-[1.02] md:text-7xl">
+                <h2 className="font-serif text-4xl leading-tight sm:text-5xl sm:leading-[1.02] md:text-7xl">
                   Not sure what you need?
                   <br />
                   <em className="text-[var(--teal)]">We can help.</em>

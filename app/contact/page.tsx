@@ -26,7 +26,7 @@ export default function ContactPage() {
           <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-[var(--cream)]/20 bg-[var(--cream)]/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-[var(--cream)]/80">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--teal)]" /> contact us
           </div>
-          <h1 className="text-5xl leading-[1.02] tracking-tight md:text-[5.5rem]">
+          <h1 className="text-[2rem] leading-tight tracking-tight sm:text-5xl sm:leading-[1.02] md:text-[5.5rem]">
             Let&apos;s <em className="italic text-[var(--teal)]">connect.</em>
           </h1>
           <p className="mt-6 max-w-xl text-lg text-[var(--cream)]/70">
@@ -66,12 +66,17 @@ export default function ContactPage() {
                   <h3 className="font-serif text-lg">Call Us</h3>
                   <div className="mt-2 space-y-2">
                     {TEAM_CONTACTS.map((c) => (
-                      <a key={c.phone} href={`tel:${c.phone}`} className="flex items-center justify-between gap-3 rounded-xl border border-transparent px-3 py-2 text-sm transition-all hover:border-border hover:bg-white">
+                      /* Name+role on the left and the number on the right had ~180px of
+                         usable width for ~300px of text at 375px (this card is `p-7` and
+                         sits beside a 48px icon), so the two halves wrapped into each
+                         other. Stack on mobile, restore the side-by-side row at `sm`.
+                         `shrink-0` stops the number itself from being broken up. */
+                      <a key={c.phone} href={`tel:${c.phone}`} className="flex flex-col gap-1 rounded-xl border border-transparent px-3 py-2 text-sm transition-all hover:border-border hover:bg-white sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                         <div>
                           <span className="font-medium">{c.name}</span>
                           <span className="ml-2 text-xs text-muted-foreground">{c.role}</span>
                         </div>
-                        <span className="text-[var(--teal-deep)]">{c.display}</span>
+                        <span className="shrink-0 text-[var(--teal-deep)]">{c.display}</span>
                       </a>
                     ))}
                   </div>
@@ -207,7 +212,7 @@ export default function ContactPage() {
           <div className="grid gap-12 md:grid-cols-12 md:items-end">
             <div className="md:col-span-8">
               <div className="text-xs uppercase tracking-[0.25em] text-[var(--teal)]">Next step</div>
-              <h2 className="mt-4 font-serif text-5xl leading-[1.02] md:text-7xl">
+              <h2 className="mt-4 font-serif text-4xl leading-tight sm:text-5xl sm:leading-[1.02] md:text-7xl">
                 Schedule a consultation<br />at your <em className="text-[var(--teal)]">preferred time.</em>
               </h2>
             </div>

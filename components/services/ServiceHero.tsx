@@ -39,7 +39,9 @@ function HeroMediaImage({ src, quality }: { src: string; quality: number }) {
         alt=""
         aria-hidden="true"
         fill
-        priority
+        // `preload`, not `priority`: v16 deprecated `priority` in favour of it. This is
+        // the above-the-fold hero background and therefore the LCP candidate.
+        preload
         sizes="100vw"
         quality={quality}
         className="object-cover"
@@ -153,7 +155,10 @@ export default function ServiceHero({
           )}
 
           <Reveal delay={80}>
-            <h1 className="text-5xl leading-[1.02] tracking-tight drop-shadow-lg md:text-[5.5rem]">
+            {/* The headline is free text from the admin, so its length is unbounded —
+                this is the one of these headings that most needs the mobile step-down,
+                because nothing caps how many lines an editor can produce. */}
+            <h1 className="text-[2rem] leading-tight tracking-tight drop-shadow-lg sm:text-5xl sm:leading-[1.02] md:text-[5.5rem]">
               {lead}
               {last && (
                 <>

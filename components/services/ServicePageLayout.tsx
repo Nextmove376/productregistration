@@ -229,7 +229,13 @@ export default async function ServicePageLayout({
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    /*
+     * `pb-20` on mobile clears the `fixed bottom-0` StickyMobileCTA rendered further
+     * down this component. Without it the bar permanently covered the last ~64px of
+     * the page, which is the footer — so the footer's contact links were unreachable
+     * on every service page on a phone. Removed at `md`, where the bar is hidden.
+     */
+    <div className="min-h-screen bg-background pb-20 text-foreground md:pb-0">
       {/* Structured Data */}
       <script
         type="application/ld+json"
@@ -372,7 +378,8 @@ export default async function ServicePageLayout({
 
           {/* Sidebar */}
           <aside className="lg:col-span-4 space-y-8">
-            <div className="sticky top-8 space-y-8">
+            {/* `top-8` slid this card under the `sticky top-0` 64px header. */}
+            <div className="sticky top-24 space-y-8">
               {/* Quick Contact */}
               <div className="rounded-2xl border border-border bg-[var(--cream)] p-6">
                 <h3 className="font-serif text-xl">Get Free Assessment</h3>
